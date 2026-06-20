@@ -1,7 +1,7 @@
 ---
 name: obsidian-note-processor
 description: |
-  Process unsorted notes captured on phone. Reads files from New Unsorted Notes folder, applies spell-check, routes to destination (append to existing note or create new), and logs results. Use when you have captured quick voice/text notes on your phone that Obsidian synced to the unsorted folder and you want to organize them into your vault structure with minimal effort. Triggered by "process unsorted notes", "organize captured notes", "file my notes", "process captured notes", or mentions of organizing the unsorted notes folder.
+  Process unsorted notes captured on phone. Reads files from New Unsorted Notes folder, applies spell-check, routes to destination (append to existing note or create new), prepends a #new-capture task above each filed note, and logs results. Unmatched or nonsense notes are left untouched in the folder and logged. Use when you have captured quick voice/text notes on your phone that Obsidian synced to the unsorted folder and you want to organize them into your vault structure. Triggered by "process unsorted notes", "organize captured notes", "file my notes", "process captured notes", or mentions of organizing the unsorted notes folder.
 compatibility:
   - tools: Read, Write, Edit, Bash
   - requires: Obsidian vault at ~/Library/CloudStorage/OneDrive-Personal/Obsidian/Personal (OneDrive)/
@@ -11,10 +11,11 @@ compatibility:
 
 This skill processes notes captured on your phone (in `New Unsorted Notes/` folder) and files them into the vault:
 
-1. **Spell-check** — quick pass (typos, capitalization)
-2. **Route** — match against context map (you maintain), with LLM fallback
-3. **File** — move + organize, append to existing note, or create new
-4. **Log** — markdown table of what moved where
+1. **Spell-check** — light pass (typos, capitalization)
+2. **Route** — match against context map, LLM fallback
+3. **File** — prepend `#new-capture` task + content, append to existing note or create new
+4. **Delete** — remove original from `New Unsorted Notes/`
+5. **Log** — markdown table of what moved where, unsorted notes listed separately
 
 ## Prerequisites
 
@@ -52,18 +53,41 @@ Create `routing-context.md` with routing rules, organized by major blocks (Perso
 - **Name**: short name for this rule (for logging)
 - **Keywords**: comma-separated; if note text matches ANY keyword, use this route
 - **Destination**: path relative to vault root
-- **Action**: `append` (add to existing note) or `new` (create new note in 03 Effort/)
+- **Action**: `append` (add to existing note) or `new` (create new note in `03 Effort/`)
 - **Format**: `bullet` (add as `- `), `raw` (append text as-is), `timestamp_bullet` (timestamp + bullet)
 
-If a note doesn't match any keywords, skill will ask you to classify it interactively.
+If a note doesn't match any keyword and LLM routing confidence is low, it is left untouched in `New Unsorted Notes/` and logged.
 
 ## Workflow
 
 1. Review `New Unsorted Notes/` folder — any notes there?
 2. Invoke skill: "process unsorted notes"
 3. Skill reads each file, spell-checks, routes via context map
-4. For unmatched notes, skill asks you: "Where should this go?"
-5. Files move to destination; log saved as `Processing-Log-YYYYMMDD.md`
+4. Matched notes: prepend task + file to destination, delete original
+5. Unmatched/nonsense notes: leave in folder, log with reason
+
+## Task Marker
+
+Every successfully filed note gets a task prepended above its content at the destination:
+
+```
+- [ ] #new-capture "I was thinking about creating an app for my watch..." 
+```
+
+The preview is the first ~60 characters of the spell-checked note content.
+
+### Finding processed notes (Todos page filter)
+
+Add this query block to your todos page to surface all unreviewed captures:
+
+````markdown
+```tasks
+not done
+tags include #new-capture
+```
+````
+
+Mark the task done once you've reviewed the note.
 
 ## Output
 
@@ -73,42 +97,31 @@ One log file per day: `01 Atlas/Note Processing Logs/Processing-Log-YYYYMMDD.md`
 
 Each run appends a new timestamped section with its own results table.
 
-**Example log (multiple runs same day):**
+**Example log:**
 
 ```markdown
 # Processing Log — 2026-06-18
 
-**Runs today**: 2 | **Total processed**: 4 | **Pending**: 1
+**Runs today**: 2 | **Total processed**: 4 | **Unsorted**: 1
 
 ## Run 1 (14:30)
 
-Processed 3 notes.
+Processed 3 notes. 1 left unsorted.
 
 | Note          | Destination               | Action | Status | Details                            |
 | ------------- | ------------------------- | ------ | ------ | ---------------------------------- |
 | Untitled.md   | [[Project Ideas]]         | append | ✓      | App idea appended to ### App Ideas |
-| Untitled 1.md | —                         | ask    | ❓     | Fragment, needs clarification      |
 | Untitled 2.md | [[Schreinerei D. Stefan]] | append | ✓      | Appended to ## Notes section       |
+| Untitled 1.md | —                         | unsorted | ⚠️   | Could not reliably route — left in New Unsorted Notes |
 
 ## Run 2 (17:45)
 
-Processed 1 note, 1 ask resolved, 1 skip.
+Processed 1 note.
 
-| Note          | Destination       | Action   | Status | Details                                                                                      |
-| ------------- | ----------------- | -------- | ------ | -------------------------------------------------------------------------------------------- |
-| Untitled 3.md | [[Project Ideas]] | append   | ✓      | App idea appended                                                                            |
-| Untitled 4.md | [[Work MOC]]      | ask→file | ✓      | Work note, user classified as Work, filed                                                    |
-| Untitled 5.md | —                 | skip     | ⚠️     | [Untitled 5.md](../../../New Unsorted Notes/Untitled 5.md) — truncated, manual review needed |
+| Note          | Destination       | Action | Status | Details           |
+| ------------- | ----------------- | ------ | ------ | ----------------- |
+| Untitled 3.md | [[Project Ideas]] | append | ✓      | App idea appended |
 ```
-
-**Ask note format:** Skill asks user, user picks destination, note files, moved to Done Notes, logged as resolved.
-
-**Skip note format:** Note stays in unsorted folder. Log links to it with flag so user can review manually later.
-
-- **Run timestamp**: HH:MM in section header
-- **Summary row**: count of processed/pending at top
-- **Destination column**: uses wikilinks (`[[filename]]`)
-- **Each run gets own table** for clarity
 
 ## Implementation Details
 
@@ -123,10 +136,26 @@ Light pass only (30s max per note):
 
 ### Auto-titling
 
-For new notes, extract first sentence or phrase (max 60 chars):
+For new notes (action: `new`), extract first sentence or phrase (max 60 chars):
 
-- "i was thinking about creating an app" → "App for watch vibration" (or use user's phrasing)
 - Use note's own words where possible
+
+### Task Prepend
+
+For `append` action — prepend task block immediately before the appended content:
+
+```
+- [ ] #new-capture "First 60 chars of note..."
+- Spell-checked note content as bullet/raw/timestamp_bullet
+```
+
+For `new` action — task is the first line of the new file:
+
+```
+- [ ] #new-capture "First 60 chars of note..."
+
+[rest of note content]
+```
 
 ### Append Position
 
@@ -146,57 +175,32 @@ For new notes, extract first sentence or phrase (max 60 chars):
 2. For each unsorted note:
    a. Spell-check
    b. Try keyword matching against routes (case-insensitive)
-   c. If match found (confidence high) → file to destination (process complete)
-   d. If no match or low confidence → **ask user**:
-   - Show 3 best-match destination suggestions (ranked by keyword relevance to note content)
-   - User picks one, OR enters "create new route"
-   - If new route: user specifies keywords + destination
-   - File note to user's chosen destination
-     e. Log result
+   c. If match found (confidence high) → prepend task + file to destination → delete original → log ✓
+   d. If no match or low confidence → leave in `New Unsorted Notes/` → log ⚠️ with reason
+3. Write log
 
-**Ask workflow**: Interactive during skill run. Resolved before logging.
-
-**Skip workflow**: Malformed/truncated notes stay in `New Unsorted Notes/` (not moved). Logged with links for manual review.
-
-### Logging on Multiple Runs
-
-Same-day reruns append to the existing log:
-
-1. Check if `Processing-Log-YYYYMMDD.md` exists
-2. If exists: append new `## Run N (HH:MM)` section with results
-3. If new day: create fresh log file
-4. Update summary counts at top: "Runs today: X | Total processed: Y | Ask: Z | Skipped: W"
+**No interactive prompts.** Anything the skill can't route stays in the folder for manual review.
 
 ### File Cleanup
 
 After skill run:
 
-- **Processed notes**: move to `Daily Notes/Done Notes/` (filed, done)
-- **Ask notes**: move to `Daily Notes/Done Notes/` after user classifies + files them
-- **Skip notes**: stay in `New Unsorted Notes/` (for manual review). Log links to them.
-- Update/append log with run results
+- **Processed notes**: original deleted from `New Unsorted Notes/` (content lives at destination)
+- **Unsorted notes**: stay in `New Unsorted Notes/` untouched, logged with reason
 
-### Ask / Skip Handling
+### Unsorted / Skip Handling
 
-**Ask** (no keyword match):
+**Unsorted** (no keyword match, low LLM confidence, or nonsense/malformed content):
 
-- Show 3 best-match suggestions from `routing-context.md` (by keyword relevance)
-- User picks destination or creates new route
-- File note immediately
-- Log result + move to Done Notes
-
-**Skip** (malformed/truncated):
-
-- Identify: incomplete capture, garbage text, unreadable
-- Leave in `New Unsorted Notes/`
-- Log with link + flag for manual review
-- Do NOT move
+- Leave file exactly as-is in `New Unsorted Notes/`
+- Log with reason: e.g. "Could not reliably route", "Incomplete capture", "Unreadable"
+- Do NOT modify, do NOT add task marker
 
 ### Error Handling
 
-- **Routing ambiguous**: ask user for clarification
-- **Destination file missing**: create new note at that path (with proper frontmatter: `#work` or `#personal` tags)
-- **Malformed note**: flag as skip, leave in unsorted, log with link
+- **Routing ambiguous**: treat as unsorted, leave + log
+- **Destination file missing**: create new note at that path (with proper frontmatter)
+- **Malformed note**: flag as unsorted, leave + log
 - **Context map missing**: halt and tell user to create `routing-context.md`
 
 ## Examples
@@ -213,10 +217,29 @@ i was thinking about creating an app for my watch that vibrates to tell the time
 
 - Spell-check: "I was thinking about creating an app for my watch that vibrates to tell the time"
 - Route: keywords ["idea", "app", "feature"] → matches "Project ideas" → Action: `append`
-- Append to `Project Ideas.md` under `### App Ideas` section as bullet
-- Log entry: `| Untitled.md | [[Project Ideas]] | append | ✓ | App idea appended to ### App Ideas section |`
+- Prepend task + append to `Project Ideas.md` under `### App Ideas`:
+  ```
+  - [ ] #new-capture "I was thinking about creating an app for my watch that vibr..."
+  - I was thinking about creating an app for my watch that vibrates to tell the time
+  ```
+- Delete original from `New Unsorted Notes/`
+- Log: `| Untitled.md | [[Project Ideas]] | append | ✓ | Appended to ### App Ideas |`
 
-### Example 2: Create new
+### Example 2: Unsorted note
+
+**Input note:**
+
+```
+asdfjkl maybe something idk
+```
+
+**Processing:**
+
+- No keyword match, LLM confidence low
+- Leave in `New Unsorted Notes/` untouched
+- Log: `| Untitled 1.md | — | unsorted | ⚠️ | Could not reliably route — left in New Unsorted Notes |`
+
+### Example 3: New note
 
 **Input note:**
 
@@ -226,10 +249,15 @@ Stefan said kitchen will be delayed two weeks
 
 **Processing:**
 
-- Spell-check: "Stefan said kitchen will be delayed two weeks"
+- Spell-check: no changes needed
 - Route: keywords ["Stefan"] → matches "Stefan (Colfin client)" → Action: `append`, Format: `bullet`
-- Append to `01 Atlas/Colfin Studio/Kunden/Schreinerei D. Stefan.md` under `## Notes` section as bullet
-- Log entry: `| Untitled 1.md | [[Schreinerei D. Stefan]] | append | ✓ | Appended as bullet to ## Notes section |`
+- Prepend task + append to `01 Atlas/Colfin Studio/Kunden/Schreinerei D. Stefan.md` under `## Notes`:
+  ```
+  - [ ] #new-capture "Stefan said kitchen will be delayed two weeks"
+  - Stefan said kitchen will be delayed two weeks
+  ```
+- Delete original
+- Log: `| Untitled 2.md | [[Schreinerei D. Stefan]] | append | ✓ | Appended to ## Notes |`
 
 ---
 
@@ -242,16 +270,19 @@ Stefan said kitchen will be delayed two weeks
    - Adjust routes to match your vault structure
    - Add keywords for patterns you notice in your captures
 
-2. Test on a few notes first — refine routes based on results
+2. Add the `#new-capture` filter to your todos page (see **Task Marker** section above)
+
+3. Test on a few notes first — refine routes based on results
 
 ### Routine
 
 1. Capture notes on phone (Obsidian widget syncs to `New Unsorted Notes/`)
 2. When ready: "process unsorted notes"
-3. Review log and any interactive prompts
-4. Adjust context map if new patterns emerge
+3. Review log — check unsorted notes listed at bottom
+4. On todos page: filter `#new-capture` shows all newly filed notes for review
+5. Mark tasks done as you process each note
 
 ### Iterate
 
 - Add new routes to `routing-context.md` as you discover capture patterns
-- Skill learns from your feedback in interactive prompts
+- Review `New Unsorted Notes/` manually for anything the skill left behind
