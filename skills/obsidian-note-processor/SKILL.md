@@ -11,11 +11,12 @@ compatibility:
 
 This skill processes notes captured on your phone (in `New Unsorted Notes/` folder) and files them into the vault:
 
-1. **Spell-check** — light pass (typos, capitalization)
-2. **Route** — match against context map, LLM fallback
-3. **File** — prepend `#new-capture` task + content, append to existing note or create new
-4. **Delete** — remove original from `New Unsorted Notes/`
-5. **Log** — markdown table of what moved where, unsorted notes listed separately
+1. **Split** — split each file into blocks (separated by blank lines)
+2. **Spell-check** — light pass per block (typos, capitalization)
+3. **Route** — match each block against context map, LLM fallback
+4. **File** — prepend `#new-capture` task + content, append to existing note or create new
+5. **Clean** — remove routed blocks from original file; delete original entirely if all blocks routed
+6. **Log** — markdown table with one row per block
 
 ## Prerequisites
 
@@ -102,25 +103,22 @@ Each run appends a new timestamped section with its own results table.
 ```markdown
 # Processing Log — 2026-06-18
 
-**Runs today**: 2 | **Total processed**: 4 | **Unsorted**: 1
+**Runs today**: 2 | **Total blocks processed**: 6 | **Blocks unsorted**: 2 | **Files deleted**: 2 | **Files kept**: 1
 
 ## Run 1 (14:30)
 
-Processed 3 notes. 1 left unsorted.
+Processed 3 files → 5 blocks. 2 blocks unsorted. 1 file kept (has unrouted blocks).
 
-| Note          | Destination               | Action | Status | Details                            |
-| ------------- | ------------------------- | ------ | ------ | ---------------------------------- |
-| Untitled.md   | [[Project Ideas]]         | append | ✓      | App idea appended to ### App Ideas |
-| Untitled 2.md | [[Schreinerei D. Stefan]] | append | ✓      | Appended to ## Notes section       |
-| Untitled 1.md | —                         | unsorted | ⚠️   | Could not reliably route — left in New Unsorted Notes |
+| File          | Block # | Block preview (60 chars)       | Destination               | Action   | Status | Details                            |
+| ------------- | ------- | ------------------------------ | ------------------------- | -------- | ------ | ---------------------------------- |
+| Untitled.md   | 1       | I was thinking about an app... | [[Project Ideas]]         | append   | ✓      | Appended to ### App Ideas          |
+| Untitled 2.md | 1       | Stefan said kitchen delayed... | [[Schreinerei D. Stefan]] | append   | ✓      | Appended to ## Notes               |
+| Untitled 4.md | 1       | Colfin website header needs... | [[Colfin MOC]]            | append   | ✓      | Appended to ## Quick captures      |
+| Untitled 4.md | 2       | good recipe chicken pasta...   | —                         | unsorted | ⚠️    | Could not reliably route           |
+| Untitled 4.md | 3       | PC setup drivers install...    | —                         | unsorted | ⚠️    | Could not reliably route           |
 
-## Run 2 (17:45)
-
-Processed 1 note.
-
-| Note          | Destination       | Action | Status | Details           |
-| ------------- | ----------------- | ------ | ------ | ----------------- |
-| Untitled 3.md | [[Project Ideas]] | append | ✓      | App idea appended |
+Files deleted: Untitled.md, Untitled 2.md
+Files kept (partial): Untitled 4.md
 ```
 
 ## Implementation Details
@@ -169,14 +167,28 @@ For `new` action — task is the first line of the new file:
 - **raw**: `[spell-checked content]` (no bullet, as-is)
 - **timestamp_bullet**: `- 2026-06-18 — [content]`
 
+### Block Splitting
+
+Before routing, split each file into blocks:
+
+- Delimiter: one or more blank lines (two or more consecutive newlines)
+- Trim leading/trailing whitespace from each block
+- Discard empty blocks (whitespace-only)
+- A file with no blank lines = one block
+
 ### Routing Logic
 
 1. Read context map from `routing-context.md`
-2. For each unsorted note:
-   a. Spell-check
-   b. Try keyword matching against routes (case-insensitive)
-   c. If match found (confidence high) → prepend task + file to destination → delete original → log ✓
-   d. If no match or low confidence → leave in `New Unsorted Notes/` → log ⚠️ with reason
+2. For each unsorted file:
+   a. Split into blocks
+   b. For each block:
+      - Spell-check
+      - Try keyword matching against routes (case-insensitive)
+      - If match found (confidence high) → prepend task + file to destination → log ✓
+      - If no match or low confidence → log ⚠️ with reason
+   c. After all blocks processed:
+      - All blocks routed → delete original file
+      - Any block unrouted → rewrite original file with only unrouted blocks remaining (joined by blank lines); routed blocks removed
 3. Write log
 
 **No interactive prompts.** Anything the skill can't route stays in the folder for manual review.
@@ -185,16 +197,16 @@ For `new` action — task is the first line of the new file:
 
 After skill run:
 
-- **Processed notes**: original deleted from `New Unsorted Notes/` (content lives at destination)
-- **Unsorted notes**: stay in `New Unsorted Notes/` untouched, logged with reason
+- **All blocks routed**: original deleted from `New Unsorted Notes/`
+- **Partial match**: original rewritten with only unrouted blocks (routed blocks stripped out); blank lines preserved between remaining blocks
 
 ### Unsorted / Skip Handling
 
-**Unsorted** (no keyword match, low LLM confidence, or nonsense/malformed content):
+**Unsorted block** (no keyword match, low LLM confidence, or nonsense/malformed content):
 
-- Leave file exactly as-is in `New Unsorted Notes/`
-- Log with reason: e.g. "Could not reliably route", "Incomplete capture", "Unreadable"
-- Do NOT modify, do NOT add task marker
+- Do NOT modify original file
+- Log block with reason: e.g. "Could not reliably route", "Incomplete capture", "Unreadable"
+- Do NOT add task marker for this block
 
 ### Error Handling
 
@@ -205,9 +217,9 @@ After skill run:
 
 ## Examples
 
-### Example 1: Simple append
+### Example 1: Single-block file
 
-**Input note:**
+**Input (`Untitled.md`):**
 
 ```
 i was thinking about creating an app for my watch that vibrates to tell the time
@@ -215,19 +227,41 @@ i was thinking about creating an app for my watch that vibrates to tell the time
 
 **Processing:**
 
+- Split → 1 block
 - Spell-check: "I was thinking about creating an app for my watch that vibrates to tell the time"
-- Route: keywords ["idea", "app", "feature"] → matches "Project ideas" → Action: `append`
-- Prepend task + append to `Project Ideas.md` under `### App Ideas`:
+- Route: keywords ["idea", "app"] → matches "Project ideas" → Action: `append`
+- Append to `Project Ideas.md` under `### App Ideas`:
   ```
   - [ ] #new-capture "I was thinking about creating an app for my watch that vibr..."
   - I was thinking about creating an app for my watch that vibrates to tell the time
   ```
-- Delete original from `New Unsorted Notes/`
-- Log: `| Untitled.md | [[Project Ideas]] | append | ✓ | Appended to ### App Ideas |`
+- All blocks routed → delete original
+- Log: `| Untitled.md | 1 | I was thinking about creating... | [[Project Ideas]] | append | ✓ | Appended to ### App Ideas |`
 
-### Example 2: Unsorted note
+### Example 2: Multi-block file, partial match
 
-**Input note:**
+**Input (`Untitled 4.md`):**
+
+```
+Colfin website needs new header image, ask designer
+
+good recipe pasta with chicken breast and tomatoes tonight
+
+PC setup remember to install GPU drivers after reset
+```
+
+**Processing:**
+
+- Split → 3 blocks
+- Block 1: route → "Colfin" keyword → [[Colfin MOC]] ✓
+- Block 2: no keyword match, LLM low confidence → unsorted ⚠️
+- Block 3: no keyword match, LLM low confidence → unsorted ⚠️
+- Rewrite original: block 1 removed, blocks 2 + 3 remain (joined by blank line)
+- Log rows: 3 (one per block)
+
+### Example 3: Unsorted block
+
+**Block content:**
 
 ```
 asdfjkl maybe something idk
@@ -235,29 +269,8 @@ asdfjkl maybe something idk
 
 **Processing:**
 
-- No keyword match, LLM confidence low
-- Leave in `New Unsorted Notes/` untouched
-- Log: `| Untitled 1.md | — | unsorted | ⚠️ | Could not reliably route — left in New Unsorted Notes |`
-
-### Example 3: New note
-
-**Input note:**
-
-```
-Stefan said kitchen will be delayed two weeks
-```
-
-**Processing:**
-
-- Spell-check: no changes needed
-- Route: keywords ["Stefan"] → matches "Stefan (Colfin client)" → Action: `append`, Format: `bullet`
-- Prepend task + append to `01 Atlas/Colfin Studio/Kunden/Schreinerei D. Stefan.md` under `## Notes`:
-  ```
-  - [ ] #new-capture "Stefan said kitchen will be delayed two weeks"
-  - Stefan said kitchen will be delayed two weeks
-  ```
-- Delete original
-- Log: `| Untitled 2.md | [[Schreinerei D. Stefan]] | append | ✓ | Appended to ## Notes |`
+- No keyword match, LLM confidence low → unsorted
+- Log: `| Untitled 1.md | 1 | asdfjkl maybe something idk | — | unsorted | ⚠️ | Could not reliably route |`
 
 ---
 
