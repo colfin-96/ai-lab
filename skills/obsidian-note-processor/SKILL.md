@@ -1,7 +1,8 @@
 ---
 name: obsidian-note-processor
+version: 2
 description: |
-  Process unsorted notes captured on phone. Reads files from New Unsorted Notes folder, applies spell-check, routes to destination (append to existing note or create new), prepends a #new-capture task above each filed note, and logs results. Unmatched or nonsense notes are left untouched in the folder and logged. Use when you have captured quick voice/text notes on your phone that Obsidian synced to the unsorted folder and you want to organize them into your vault structure. Triggered by "process unsorted notes", "organize captured notes", "file my notes", "process captured notes", or mentions of organizing the unsorted notes folder.
+  v2 — Process unsorted notes captured on phone. Splits each file into blocks (blank-line-separated), routes each block independently to destination (append to existing note or create new), prepends a #new-capture task above each filed block, rewrites original with only unrouted blocks remaining (deletes if all routed), and logs results with one row per block. Triggered by "process unsorted notes", "organize captured notes", "file my notes", "process captured notes", or mentions of organizing the unsorted notes folder.
 compatibility:
   - tools: Read, Write, Edit, Bash
   - requires: Obsidian vault at ~/Library/CloudStorage/OneDrive-Personal/Obsidian/Personal (OneDrive)/
@@ -98,6 +99,8 @@ One log file per day: `01 Atlas/Note Processing Logs/Processing-Log-YYYYMMDD.md`
 
 Each run appends a new timestamped section with its own results table.
 
+**Destination column**: always use the full vault-relative path from `routing-context.md` wrapped in `[[ ]]` (e.g. `[[01 Atlas/Work/Work MOC.md]]`). Never strip to filename-only — the wiki-link must resolve to the correct file even when duplicate names exist.
+
 **Example log:**
 
 ```markdown
@@ -109,13 +112,13 @@ Each run appends a new timestamped section with its own results table.
 
 Processed 3 files → 5 blocks. 2 blocks unsorted. 1 file kept (has unrouted blocks).
 
-| File          | Block # | Block preview (60 chars)       | Destination               | Action   | Status | Details                            |
-| ------------- | ------- | ------------------------------ | ------------------------- | -------- | ------ | ---------------------------------- |
-| Untitled.md   | 1       | I was thinking about an app... | [[Project Ideas]]         | append   | ✓      | Appended to ### App Ideas          |
-| Untitled 2.md | 1       | Stefan said kitchen delayed... | [[Schreinerei D. Stefan]] | append   | ✓      | Appended to ## Notes               |
-| Untitled 4.md | 1       | Colfin website header needs... | [[Colfin MOC]]            | append   | ✓      | Appended to ## Quick captures      |
-| Untitled 4.md | 2       | good recipe chicken pasta...   | —                         | unsorted | ⚠️    | Could not reliably route           |
-| Untitled 4.md | 3       | PC setup drivers install...    | —                         | unsorted | ⚠️    | Could not reliably route           |
+| File          | Block # | Block preview (60 chars)       | Destination                              | Action   | Status | Details                            |
+| ------------- | ------- | ------------------------------ | ---------------------------------------- | -------- | ------ | ---------------------------------- |
+| Untitled.md   | 1       | I was thinking about an app... | [[02 Areas/Personal/Project Ideas.md]]   | append   | ✓      | Appended to ### App Ideas          |
+| Untitled 2.md | 1       | Stefan said kitchen delayed... | [[03 Effort/Schreinerei D. Stefan.md]]   | append   | ✓      | Appended to ## Notes               |
+| Untitled 4.md | 1       | Colfin website header needs... | [[01 Atlas/Colfin Studio/Colfin MOC.md]] | append   | ✓      | Appended to ## Quick captures      |
+| Untitled 4.md | 2       | good recipe chicken pasta...   | —                                        | unsorted | ⚠️    | Could not reliably route           |
+| Untitled 4.md | 3       | PC setup drivers install...    | —                                        | unsorted | ⚠️    | Could not reliably route           |
 
 Files deleted: Untitled.md, Untitled 2.md
 Files kept (partial): Untitled 4.md
@@ -236,7 +239,7 @@ i was thinking about creating an app for my watch that vibrates to tell the time
   - I was thinking about creating an app for my watch that vibrates to tell the time
   ```
 - All blocks routed → delete original
-- Log: `| Untitled.md | 1 | I was thinking about creating... | [[Project Ideas]] | append | ✓ | Appended to ### App Ideas |`
+- Log: `| Untitled.md | 1 | I was thinking about creating... | [[Project Ideas.md]] | append | ✓ | Appended to ### App Ideas |`
 
 ### Example 2: Multi-block file, partial match
 
