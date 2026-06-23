@@ -1,0 +1,6 @@
+version: 1
+
+interface:
+  display_name: "Grill Me"
+  short_description: "Relentlessly interrogates ideas, plans, and proposals until material uncertainty is eliminated."
+  category: productivity

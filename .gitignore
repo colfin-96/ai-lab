@@ -4,3 +4,5 @@
 *.db
 .beads-credential-key
 .beads/proxieddb/
+*.zip
+.DS_Store
