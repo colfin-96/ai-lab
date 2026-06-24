@@ -52,18 +52,18 @@ For `new`: task is the first line of the new file.
 
 ## Output
 
-Log: `01 Atlas/Note Processing Logs/Processing-Log-YYYYMMDD.md` — one file per day, append each run.
+Log: `_processing-logs/note-processor-YYYYMMDD.log.md` — one file per day, append each run.
 
-**Destination column**: relative markdown link (not wikilink). Log lives at `01 Atlas/Note Processing Logs/`.
-- Vault-root file: `[Name](../../File%20Name.md)`
-- `01 Atlas/` subdir: `[Name](../Subdir/File%20Name.md)`
+**Destination column**: relative markdown link (not wikilink). Log lives at `_processing-logs/`.
+- Vault-root file: `[Name](../File%20Name.md)`
+- `01 Atlas/` subdir: `[Name](../01%20Atlas/Subdir/File%20Name.md)`
 
 Encode spaces as `%20`. Never use `[[wikilinks]]`.
 
 **Log format:**
 
 ```markdown
-# Processing Log — YYYY-MM-DD
+# Note Processor Processing Log — YYYY-MM-DD
 
 **Runs today**: 1 | **Total blocks processed**: 3 | **Blocks unsorted**: 1 | **Files deleted**: 1 | **Files kept**: 1
 
@@ -73,8 +73,8 @@ Processed 2 files → 3 blocks. 1 block unsorted. 1 file kept.
 
 | File          | Block # | Block preview (60 chars)       | Destination                               | Action | Status | Details                    |
 | ------------- | ------- | ------------------------------ | ----------------------------------------- | ------ | ------ | -------------------------- |
-| Untitled.md   | 1       | I was thinking about an app... | [Project Ideas](../../Project%20Ideas.md) | append | ✓      | Appended to ### Ideas      |
-| Untitled 2.md | 1       | picked up milk, return book... | [Tidy Life](../../Tidy%20Life.md)         | append | ~      | Semantic guess (no keyword) |
+| Untitled.md   | 1       | I was thinking about an app... | [Project Ideas](../Project%20Ideas.md) | append | ✓      | Appended to ### Ideas      |
+| Untitled 2.md | 1       | picked up milk, return book... | [Tidy Life](../Tidy%20Life.md)         | append | ~      | Semantic guess (no keyword) |
 ```
 
 ## Implementation Details
