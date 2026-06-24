@@ -1,0 +1,82 @@
+[
+  {
+    "query": "I've been capturing thoughts all week on my phone about how to restructure my knowledge base. Got like 300 lines of notes here that are all over the place. Can you chunk them up intelligently and file them into my Obsidian vault?",
+    "should_trigger": true
+  },
+  {
+    "query": "ok so I dumped all my thoughts about the project into a text file. Different ideas mixed together about architecture, testing strategy, deployment. I want this organized and filed into my vault. Some chunks probably go in different folders.",
+    "should_trigger": true
+  },
+  {
+    "query": "I have raw meeting notes that are just one big block of text. Different topics mixed in. Need to break this down into logical pieces and put each in the right place in my Obsidian vault.",
+    "should_trigger": true
+  },
+  {
+    "query": "Been thinking about my life goals and just brain-dumped it. All this unstructured text about career, health, relationships, hobbies mixed together. Want to file this intelligently into my vault, with stuff going to the right folders based on topic.",
+    "should_trigger": true
+  },
+  {
+    "query": "I've got 15 pages of research notes copy-pasted here. It's messy and needs to be broken into chunks and organized into my Obsidian vault based on the topic structure I already have.",
+    "should_trigger": true
+  },
+  {
+    "query": "Here's a transcript from a podcast I listened to. It covers multiple topics. I want you to chunk it and suggest where each chunk goes in my vault, then file it.",
+    "should_trigger": true
+  },
+  {
+    "query": "I captured this text on my phone while thinking. It's all fragmented and jumbled but I want to get it into my Obsidian vault properly organized and split into logical pieces.",
+    "should_trigger": true
+  },
+  {
+    "query": "Random thoughts about productivity, note-taking, and Obsidian workflows all mixed together in here. Can you chunk this up and file it smartly in my vault? You'll need to suggest where each piece goes based on my vault structure.",
+    "should_trigger": true
+  },
+  {
+    "query": "I just want to read through my vault and understand what's already in there. Can you show me a summary of my notes?",
+    "should_trigger": false
+  },
+  {
+    "query": "I'm setting up a new Obsidian vault from scratch. What folder structure should I use? What should I call my MoCs?",
+    "should_trigger": false
+  },
+  {
+    "query": "Search my Obsidian vault for all notes mentioning 'project management'. I want to find related notes and link them together.",
+    "should_trigger": false
+  },
+  {
+    "query": "Can you read the file ~/Obsidian/MyVault/Project.md and summarize what's in it for me?",
+    "should_trigger": false
+  },
+  {
+    "query": "I want to refactor my Obsidian vault structure. Currently my MoCs are organized by topic, but I want to reorganize by time period. Can you help me restructure?",
+    "should_trigger": false
+  },
+  {
+    "query": "Check if there are any orphaned notes in my vault that aren't linked to anything.",
+    "should_trigger": false
+  },
+  {
+    "query": "I've got a bunch of scattered text about different programming languages. I want to intelligently chunk it and then have each chunk automatically placed in the right spot in my vault and filed with a good filename. Some chunks probably go in Python, some in JavaScript, some in the general Languages MOC.",
+    "should_trigger": true
+  },
+  {
+    "query": "Here's unstructured text I captured about personal finance, budgeting, investments, and retirement planning all jumbled together. I need you to split this into logical pieces and suggest which folders in my vault each should go to, then file them.",
+    "should_trigger": true
+  },
+  {
+    "query": "I have a CSV file with customer feedback. Can you parse it and create notes in my vault?",
+    "should_trigger": false
+  },
+  {
+    "query": "I pasted a long article here about machine learning. It has sections on neural networks, transformers, reinforcement learning, and practical applications all mixed together. I want this chunked logically and filed into my vault with smart placement based on my existing vault MOCs.",
+    "should_trigger": true
+  },
+  {
+    "query": "Can you export my Obsidian vault to a markdown file so I can share it with my team?",
+    "should_trigger": false
+  },
+  {
+    "query": "I've been thinking a lot and wrote down all these thoughts without any structure. It's just stream of consciousness covering my day, ideas, problems I'm trying to solve, things I learned. All one big mess. I want you to break it into chunks and intelligently place them in my vault.",
+    "should_trigger": true
+  }
+]

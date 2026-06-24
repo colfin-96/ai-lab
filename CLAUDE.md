@@ -22,6 +22,29 @@ Private sandbox for AI-related experiments, skills, prompts, and tooling. Not a 
 - No single owner per folder — dump first, organize later.
 - Colfin Studio-specific items live here permanently (never published).
 
+## Local Skills Setup
+
+Skills in `skills/` aren't automatically available. To make them loadable as local skills:
+
+**macOS / Linux:**
+1. Create `.claude/skills/` directory (if it doesn't exist)
+2. Symlink from project skills:
+   ```bash
+   ln -s ../../skills/<skillname> .claude/skills/<skillname>
+   ```
+3. Run `/reload-skills` in Claude Code
+
+**Windows:**
+1. Create `.claude/skills/` directory (if it doesn't exist)
+2. Copy skills or create junction (requires admin):
+   ```powershell
+   # Option A: Copy
+   Copy-Item skills\<skillname> -Destination .claude\skills\<skillname> -Recurse
+   
+   # Option B: Junction (admin required)
+   cmd /c mklink /J ".claude\skills\<skillname>" "skills\<skillname>"
+   ```
+3. Run `/reload-skills` in Claude Code
 
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:6cd5cc61 -->
 ## Beads Issue Tracker
