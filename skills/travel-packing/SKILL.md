@@ -40,18 +40,29 @@ the item list into this skill — the user edits their template over time, and t
 edits must flow through automatically. If the master is missing, fall back to the
 bare template.
 
+The `references/` directory holds frozen snapshots (`example-master-template.md`, and
+a filled-out `example-output.md`) for development and illustration only. Never read
+them at runtime — they will drift from the live vault. The vault paths above are the
+only runtime sources.
+
 ## Inputs — ask if missing
 
-You need three things:
+You need four things:
 
-1. **Destination** — city/region and country (enough to look up weather).
-2. **Dates** — start and end, or start + number of nights.
-3. **Purpose / activity** (optional but valuable) — e.g. festival, beach, business,
-   hiking, wedding. This drives what to add and what to skip.
+1. **Destination** — city/region and country (enough to look up weather, and to know
+   the plug type / whether it's outside Schengen).
+2. **Dates** — start and end, or start + number of nights. Trip length gates several
+   items (shaver, nail clippers, floss come in at 5+ days).
+3. **Travel mode** — driving, flying, train, ferry. This strongly shapes the list:
+   driving means generous space (dressing gown, laptop, extras become easy) plus
+   sunglasses and hand sanitizer for the car; flying means tight space, liquid limits,
+   and a powerbank for long transit.
+4. **Purpose / activity** (optional but valuable) — e.g. festival, beach, business,
+   hiking, wedding. Drives what to add and what to skip.
 
-If the user hasn't given destination and dates, ask for them before proceeding.
-Purpose is optional — if they don't offer it, infer what you reasonably can from the
-destination and season, and note any assumption you made.
+If the user hasn't given destination, dates, and travel mode, ask for them before
+proceeding. Purpose is optional — if they don't offer it, infer what you reasonably
+can from the destination and season, and note any assumption you made.
 
 ## Weather logic
 
@@ -75,8 +86,8 @@ rulebook — think about the actual trip):
 
 ## Tailoring rules
 
-Mirror the user's own hand-built style (see `03 Effort/FoS Goodwood Trip.md` in the
-vault for a reference example — match its level of annotation and tone). Preserve the
+Mirror the user's own hand-built style (see `references/example-output.md` for a
+reference example — match its level of annotation and tone). Preserve the
 master's **section structure and heading order** exactly: `Pre-Trip Todos`, `Clothes`,
 `Toiletries`, `Electronics`, `Other`. Within a section you may reorder items so the
 things being taken sit at the top and the struck items sit below — the reference does
@@ -122,6 +133,61 @@ activity call for. Keep them as tasks and annotate why:
 Keep annotations terse — a few words on the "why", matching the reference. The goal is
 a list the user can scan and trust, seeing at a glance both what's coming and what was
 deliberately left behind.
+
+## Item decision guide
+
+This captures how the user actually decides, per item. It's a guide, not a rulebook —
+weather, purpose, and travel mode still override. But default to these so the list
+feels like the user's own.
+
+**Always take (keep as `- [ ]`, don't strike unless the user says otherwise):**
+
+- Pants, Socks, T-Shirts — the non-negotiable base, scaled to nights.
+- One of Trousers *or* Shorts (weather picks which; hot → shorts, cool/smart → trousers),
+  plus Belt.
+- Toothbrush & Toothpaste, Deodorant, Hair Wax, Perfume.
+- Phone, Charger (Phone + Watch), Smartwatch.
+- Personalausweis.
+- 2 Bin Bags — keep both: one for dirty washing, one to wrap shower gel against leaks.
+- Glasses Cloth — lives in the rucksack by default, so it's always there.
+
+**Medicine — always ask.** Don't strike or assume. Ask the user whether they're
+currently taking or likely to need any meds for this trip, and reflect their answer.
+
+**Usually take (default in unless there's a reason not to):**
+
+- Jumper — 1, for cooler evenings / a layer.
+- Rucksack.
+- Shower Gel.
+
+**Conditional — decide from dates / mode / weather / destination:**
+
+- Dressing Gown — take if driving or there's clearly enough luggage space; skip if
+  flying light or short trip.
+- Sun Glasses — summer, and especially if driving.
+- Shaver + Charger — 5+ day trips.
+- Nail Clippers, Tooth Floss — 5+ day trips.
+- Powerbank + Cable — long transit (especially flying), or photo-heavy event days out
+  with no charging.
+- Headphones + Case — take if there's space; usual on flights/trains.
+- Adapter (Small) — only for non-German/non-EU sockets: UK, US, Canada, etc. Skip for
+  Schengen/EU-plug destinations.
+- Adapter (Extension Cord) — alternative or addition to the small adapter; same
+  destination rule. Only when several devices need charging.
+- Laptop + Charger — take when there's space, for the translation side business.
+- Keyboard + Mouse — seldom; only if the laptop use and luggage space justify it.
+- Tablet — rarely; nice for watching a film on long transit.
+- Sun cream, Cap/hat — summer / sunny / lots of sun exposure.
+- Hand Sanitizer — when driving.
+- Books — if there'll be downtime to read.
+- Passport — only when leaving the Schengen area.
+
+**Rarely take:**
+
+- Swimming Trunks — only if a pool / beach / swim is actually planned.
+
+Weather can still add items beyond the master (water bottle for a hot day out,
+waterproof for rain) — annotate those as additions, as in the reference.
 
 ## Output note
 
