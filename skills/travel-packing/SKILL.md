@@ -93,14 +93,43 @@ master's **section structure and heading order** exactly: `Pre-Trip Todos`, `Clo
 things being taken sit at the top and the struck items sit below — the reference does
 this — but don't invent or drop sections.
 
-**Quantities — scale to nights.** For consumable/repeated clothing, append `— <n>`.
-Rule of thumb: roughly one per night for pants, socks, T-shirts, capped by what's
-sensible for the trip length and laundry access. Example:
+**Quantities — scale to nights, with a buffer.** For repeated clothing, append `— <n>`.
+Baseline is roughly one per night, but the user always wants a bit of slack, and more
+slack the longer the trip:
+
+- **Pants and socks: always at least nights + 1.** A short trip still gets one spare
+  pair; a long trip gets a few extra so there's margin before laundry.
+- T-shirts, and other clothes generally: scale up with trip length too — a week away
+  warrants noticeably more than a long weekend, not a strict one-per-night count.
+- Cap by what's sensible given laundry access; if the user mentions doing washing,
+  ease off the extras.
+
+**Socks are split into short and long, driven by weather and which bottoms go.** The
+master lists a single "Socks" line — replace it with the split that fits the trip:
+
+- **Short socks** — summer / hot weather, worn with shorts.
+- **Long socks** — winter / cool weather, worn with chinos or trousers.
+- **Mixed weather or both bottoms going** — take a mix of both, each scaled to how
+  many days of that style are likely.
+
+Tie the sock count to the bottoms: shorts days → short socks, chinos/trousers days →
+long socks. Apply the nights + 1 buffer to the sock total.
+
+Example — 2-night hot summer trip, shorts-based:
 
 ```
 - [ ] Pants — 3
-- [ ] Socks — 3
+- [ ] Short Socks — 3
 - [ ] T-Shirts — 3
+```
+
+Example — 6-night cool-and-mixed trip, some shorts + some trouser days:
+
+```
+- [ ] Pants — 7
+- [ ] Short Socks — 3 (shorts days)
+- [ ] Long Socks — 4 (trouser days)
+- [ ] T-Shirts — 5
 ```
 
 **Applicable items stay as unchecked tasks** so the user can tick them while packing:
@@ -142,7 +171,8 @@ feels like the user's own.
 
 **Always take (keep as `- [ ]`, don't strike unless the user says otherwise):**
 
-- Pants, Socks, T-Shirts — the non-negotiable base, scaled to nights.
+- Pants, socks (short and/or long — see quantities), T-Shirts — the non-negotiable
+  base, scaled to nights with the nights + 1 buffer.
 - One of Trousers *or* Shorts (weather picks which; hot → shorts, cool/smart → trousers),
   plus Belt.
 - Toothbrush & Toothpaste, Deodorant, Hair Wax, Perfume.
