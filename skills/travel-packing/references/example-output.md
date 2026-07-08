@@ -20,6 +20,16 @@ Weather (live Met Office forecast, 3 days out): sunny and dry all three days, ho
 rising — 28°C Thu → 30°C Fri → 32°C Sat, lows ~19°C, rain <10%, light-moderate wind.
 **UV very high (8)** — sun protection essential. Outdoor event, lots of walking/standing.
 
+## Luggage
+
+**Take: Rucksack (sole bag).**
+Flying, 2 nights — space-tight, so the rucksack alone. Clothes fill it; decant
+liquids to <100ml or buy on arrival (airport limit, not a bag problem).
+
+- [ ] Rucksack
+- ~~Green case (small)~~ — not needed, 2-night flight packs light
+- ~~Large suitcase~~ — only 2wk+ / intercontinental
+
 ## Pre-Trip Todos
 
 - [ ] Book travel
@@ -73,7 +83,6 @@ Prefilled for 2 nights, hot/dry/sunny, outdoor event.
 
 ## Other
 
-- [ ] Rucksack
 - [ ] Sun cream — essential, UV very high (8)
 - [ ] Cap/hat — essential, full-day sun exposure
 - [ ] Water bottle — add, hot day walking/standing
