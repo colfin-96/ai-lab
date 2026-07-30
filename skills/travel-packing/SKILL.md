@@ -54,9 +54,14 @@ You need four things:
 2. **Dates** — start and end, or start + number of nights. Trip length gates several
    items (shaver, nail clippers, floss come in at 5+ days).
 3. **Travel mode** — driving, flying, train, ferry. This strongly shapes the list:
-   driving means generous space (dressing gown, laptop, extras become easy) plus
-   sunglasses and hand sanitizer for the car; flying means tight space, liquid limits,
-   and a powerbank for long transit.
+   driving usually means generous space (dressing gown, laptop, extras become easy)
+   plus sunglasses and hand sanitizer for the car; flying means tight space, liquid
+   limits, and a powerbank for long transit.
+   - **If driving, ask which vehicle** — boot space varies enormously and drives the
+     luggage call. A small sports car (e.g. Porsche) has barely more room than a plane
+     cabin; a large MPV or estate (e.g. Alhambra) is effectively unlimited. Don't
+     assume "driving = space-free"; get the car first. If the user won't say, assume
+     a mid-size car (moderate boot) and note the assumption.
 4. **Purpose / activity** (optional but valuable) — e.g. festival, beach, business,
    hiking, wedding. Drives what to add and what to skip.
 
@@ -187,8 +192,9 @@ currently taking or likely to need any meds for this trip, and reflect their ans
 **Usually take (default in unless there's a reason not to):**
 
 - Jumper — 1, for cooler evenings / a layer.
-- Rucksack.
 - Shower Gel.
+
+(Rucksack is decided in the Luggage recommendation, not here.)
 
 **Conditional — decide from dates / mode / weather / destination:**
 
@@ -219,6 +225,61 @@ currently taking or likely to need any meds for this trip, and reflect their ans
 Weather can still add items beyond the master (water bottle for a hot day out,
 waterproof for rain) — annotate those as additions, as in the reference.
 
+## Luggage recommendation
+
+Recommend which bag(s) to carry everything in. The user owns three carriers — reason
+from this fixed kit, don't invent others:
+
+- **Rucksack** — smallest. Comfortable for 1–2 nights; stretches to ~4 at a push but
+  then it's full of clothes with no room for toiletries. Also the user's usual day bag
+  and plane personal item.
+- **Green case (small)** — mid-size wheeled case; goes in the cabin as hand luggage.
+  The workhorse for roughly 3–7 night trips.
+- **Large suitcase** — rarely used; only for ~2 weeks+ or intercontinental trips.
+
+**Liquids are a space note, not a carrier rule.** Any bag carried into the cabin hits
+the airport 100ml liquid limit — it's the same for rucksack and green case. So when
+flying, note "decant liquids to <100ml or buy on arrival" regardless of which bag.
+The real difference between bags is **volume**: the rucksack simply runs out of room
+for toiletries once clothes fill it.
+
+**Primary carrier — pick from the nights × available-space grid.** "Space" is set by
+travel mode *and*, when driving, by the vehicle's boot:
+
+- **Space-tight** = flying, *or* driving a small-boot car (e.g. a Porsche/sports car).
+- **Space-free** = driving a large-boot MPV or estate (e.g. an Alhambra).
+- **Moderate** = train/ferry, or driving a mid-size car — treat as space-tight unless
+  the trip is comfortably within the smaller bag; lean roomy only when the boot clearly
+  allows it.
+
+| Nights | Space-tight | Space-free |
+|--------|-------------|------------|
+| 1–2 | Rucksack | Green case |
+| 3–7 | Green case | Green case (large if bulky/lots of kit) |
+| 8+ or intercontinental | Large suitcase | Large suitcase |
+
+Rationale: length sets the baseline volume; tight space prefers the smallest bag that
+works (cabin limits when flying, a cramped boot when driving a small car), free space
+lets you size up for comfort. Both axes carry roughly equal weight — a 2-night drive
+in the Alhambra can take the case, but a 2-night flight *or* a 2-night run in the
+Porsche should stay on the rucksack.
+
+**Companion rucksack — default-on.** Unless the rucksack is already the sole/primary
+carrier (space-tight + 1–2 nights, i.e. flying or a small-boot car), include it as a
+second bag: day bag at the destination, and the plane personal item (laptop/valuables)
+when flying with the case. When driving it always comes along, even if only for the
+laptop.
+
+**Gear/purpose can size up one level.** If the trip implies bulk — ski kit, camping
+gear, formalwear (suit + shoes), dive gear — bump the primary carrier up a size and
+state the reason (e.g. a 3-night ski trip by car → large suitcase, not green case).
+
+Write the result as a `## Luggage` section (see Output note): a bold one-line verdict,
+one or two lines of reasoning tied to the actual trip, then a checklist of the bags to
+take with the unused carrier(s) struck through and a short reason. The `Rucksack` item
+from the master's `Other` section moves here — drop it from `Other` in the output so
+it isn't listed twice.
+
 ## Output note
 
 Write a new note to `01 Atlas/Travel/`.
@@ -235,9 +296,11 @@ tags: [personal, travel]
 ---
 ```
 
-**Body** — an `# <Trip Name>` H1, then a `## Context` section, then the tailored
-sections in master order. The Context section states the trip dates, number of nights,
-destination, and the weather assumption, being explicit about forecast vs. historical:
+**Body** — an `# <Trip Name>` H1, then a `## Context` section, then a `## Luggage`
+section (the carrier recommendation — see Luggage recommendation above), then the
+tailored master sections in order. The Context section states the trip dates, number
+of nights, destination, and the weather assumption, being explicit about forecast vs.
+historical:
 
 ```markdown
 # FoS Goodwood Trip
@@ -252,6 +315,20 @@ of walking/standing.
 For a trip beyond forecast range, phrase the weather line as a pattern, e.g.:
 `Weather (historical pattern for mid-October, no live forecast yet): typically cool,
 ~14°C, frequent rain — re-check nearer the date.`
+
+The `## Luggage` section follows Context:
+
+```markdown
+## Luggage
+
+**Take: Rucksack (sole bag).**
+Flying, 2 nights — space-tight, so the rucksack alone. Clothes fill it; decant
+liquids to <100ml or buy on arrival (airport limit, not a bag problem).
+
+- [ ] Rucksack
+- ~~Green case (small)~~ — not needed, 2-night flight packs light
+- ~~Large suitcase~~ — only 2wk+ / intercontinental
+```
 
 ## After writing
 
