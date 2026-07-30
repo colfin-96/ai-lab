@@ -28,7 +28,7 @@ The user pastes raw notes. They may include:
 - A date line (e.g. `Web CoP notes 260730` → 30 July 2026, `YYMMDD`).
 - Nested bullets of varying depth and quality.
 - Trailing empty bullets — drop them silently.
-- Names of presenters (Tim, Janik, …) and URLs.
+- Presenter names and URLs.
 
 If the date is not derivable from the notes, ask for it. Never guess.
 
@@ -101,17 +101,18 @@ bullet list, and Tab indents. That cannot be achieved by pasting.
    weight: decisions and things affecting everyone's daily work first, demos and
    link-shares last.
 2. **Compress, don't expand.** Shorthand becomes a clean sentence, not a longer
-   one: `prime21 works for us` → "PrimeNG 21 still covers our needs." Normalize
-   product names (`prime` → PrimeNG, `A2UI` stays as written). Cut hedging and
-   meeting-speak — "it was discussed that", "we came to the conclusion that",
-   "at this point in time".
+   one: `lib v3 works for us` → "Version 3 still covers our needs." Expand
+   abbreviated product names to their proper spelling, and keep that spelling
+   consistent across the message. Cut hedging and meeting-speak — "it was
+   discussed that", "we came to the conclusion that", "at this point in time".
 3. **One decision per bullet, stated flat.** What was decided, plus the date if
    there is one. Merge related decisions into one bullet when they share a
-   subject ("no PrimeNG 22 purchase and no library switch for now").
+   subject ("no upgrade purchase and no library switch for now").
 4. **Status-update carry-overs.** When a topic already appeared in an earlier
    summary, lead with the status ("Unchanged: …") and skip the background.
-5. **Attribute demos in the heading**, e.g. `A2UI (Tim):`, so the bullet below
-   can be pure content.
+5. **Attribute demos in the heading**, e.g. `<Tool name> (<presenter>):`, so the
+   bullet below can be pure content. Use whatever name form the notes use —
+   first names if that is the team's habit.
 6. **Add nothing.** No invented rationale, no numbers, no action owners that
    aren't in the notes. If a note is too cryptic to compress safely, keep it
    close to verbatim and list it under "Unclear from the notes" after the
