@@ -1,0 +1,5 @@
+__pycache__/
+# Ad-hoc captures of real pages for debugging. Kept out of git: they are large,
+# go stale within the week, and are someone else's content. --verify picks them
+# up automatically when present locally. Committed fixtures are synthetic-*.html.
+fixtures/real-*.html

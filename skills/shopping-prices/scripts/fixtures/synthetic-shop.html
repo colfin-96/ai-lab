@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="de-DE">
+<head>
+<base href="https://www.aktionspreis.de/">
+<title>aktuelle Synthetic Angebote | Aktionspreis.de</title>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"SaleEvent","name":"Synthetic Angebote",
+ "startDate":"2026-07-27","endDate":"2026-08-02",
+ "performer":{"@type":"Organization","name":"Synthetic"}}
+</script>
+</head>
+<body>
+
+<!-- Synthetic regression fixture. NOT a copy of any real page.
+     Encodes the five markup quirks that broke the parser during development:
+       1. product hrefs are shop-scoped and two-segment: /angebote/<shop>/<product>
+       2. hrefs may carry a #fragment, so a '"'-terminated regex matches nothing
+       3. the Tiefstpreis block sits ABOVE the first <h3> and repeats a category
+          item under a DIFFERENT slug (so slug dedupe cannot catch it)
+       4. unit prices are emitted as fake products: size exactly 1l/1kg,
+          no discount badge, empty grundpreis
+       5. the header count covers the CATEGORY listing only
+     Expected parse: claimed=4, categorised=4, buyable=3, derived=1, dupes=1,
+     and the Tiefstpreis flag lands on the categorised Hela row. -->
+
+<h1>Synthetic Angebote vom 27.07. - 02.08.2026</h1>
+<div>4 aktuelle Synthetic Angebote davon 1 Tiefstpreise</div>
+
+<!-- (3) Tiefstpreis highlight block: above any <h3>, different slug, same
+     price+size as the categorised Hela row below. -->
+<div class="schattenkachel" id="tiefstpreis-box">
+  <span>Tiefstpreis</span>
+  <a href="/angebote/synthetic/hela-gewuerzketchup-800ml#95_tiefstpreis"
+     title="Hela Gewürzketchup (800ml)">
+    <img alt="Hela Gewürzketchup, versch. Sorten">
+    <b>1,99 &euro;</b> 800ml <span class="grundpreis">2,49 &euro; je Liter</span>
+  </a>
+</div>
+
+<h3>Ketchup, Saucen</h3>
+<div class="schattenkachel">
+  <a href="/angebote/synthetic/hela-ketchup-800ml" title="Hela Ketchup (800ml)">
+    <span class="percent_new">41%</span>
+    <img alt="Hela Ketchup, versch. Sorten">
+    <b>1,99 &euro;</b> 800ml <span class="grundpreis">2,49 &euro; je Liter</span>
+  </a>
+</div>
+<div class="schattenkachel">
+  <a href="/angebote/synthetic/heinz-tomato-ketchup-1-170l" title="Heinz Tomato Ketchup (1,170l)">
+    <span class="percent_new">57%</span>
+    <img alt="Heinz Tomato Ketchup">
+    <b>2,79 &euro;</b> 1,170l <span class="grundpreis">2,38 &euro; je Liter</span>
+  </a>
+</div>
+
+<h3>Spirituosen</h3>
+<div class="schattenkachel">
+  <a href="/angebote/synthetic/asbach-uralt-0-7l" title="Asbach Uralt (0,7l)">
+    <span class="percent_new">29%</span>
+    <img alt="Asbach Uralt">
+    <b>9,99 &euro;</b> 0,7l <span class="grundpreis">14,27 &euro; je Liter</span>
+  </a>
+</div>
+<!-- (4) derived unit row: the per-litre price of the 0,7l bottle above,
+     rendered as its own pseudo-product. Not purchasable. -->
+<div class="schattenkachel">
+  <a href="/angebote/synthetic/asbach-1l" title="Asbach (1l)">
+    <img alt="Asbach">
+    <b>14,27 &euro;</b> 1l <span class="grundpreis">&nbsp;</span>
+  </a>
+</div>
+
+<!-- homepage promo card that bleeds onto every page; must be filtered as noise -->
+<a href="/angebote/vio-biolimo-1l" title="Vio Biolimo (1l)"><b>1,29 &euro;</b></a>
+
+</body>
+</html>
