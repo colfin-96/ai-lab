@@ -2,6 +2,11 @@
 
 Load when the profile lists `DE`. Additive on top of WCAG 2.2 A + AA, which stays the baseline.
 
+**Load `eu.md` as well.** Both German laws here transpose EU directives, so the EU-level overlay
+carries what they inherit — the EAA and Web Accessibility Directive, EN 301 549's version state and
+which WCAG baseline is currently harmonised, and the process obligations (accessibility statement,
+feedback mechanism, conformity documentation). This file covers only what Germany adds on top.
+
 **This is orientation, not legal advice.** A code review cannot establish legal conformance.
 State findings in terms of the technical standard and let the organisation's own compliance
 people reach legal conclusions.

@@ -15,8 +15,31 @@ The profile is committed because it describes the project, not the person: a tea
 `/a11y` should get the same rules. The ledger is gitignored because it is working state, it
 churns every run, and it would turn every PR into a diff of somebody's todo list.
 
-Add the ignore entry if it is missing, but **ask before editing `.gitignore`** — it is a
-tracked file and a silent edit will surprise someone in review.
+Neither property can be assumed — verify both directions with `git check-ignore -v`, since the
+profile being *silently ignored* is as much a defect as the ledger being *tracked*:
+
+```bash
+git check-ignore -v .claude/a11y/profile.md   # expect no output
+git check-ignore -v .claude/a11y/findings.md  # expect a matching rule
+```
+
+Many repos ignore `.claude` wholesale, in which case the profile never gets committed, every
+teammate re-profiles from scratch, and their audits diverge. Un-ignoring it takes more than one
+negation, because git does not descend into an excluded directory:
+
+```gitignore
+.claude/*
+!.claude/a11y/
+.claude/a11y/*
+!.claude/a11y/profile.md
+```
+
+`playbooks/init.md` covers this in full, including how to keep the repo's other `.claude`
+exclusions intact.
+
+**Ask before editing `.gitignore`** — adding the ledger entry or opening a hole for the profile
+both modify a tracked file, and a silent edit will surprise someone in review. If the user
+declines, the profile is local-only; say so in the footer rather than implying it is shared.
 
 ## Severity: two independent axes
 
@@ -63,6 +86,17 @@ Not checkable from code: see references/regional/de.md § Not checkable here
 Every line of that footer exists to stop a specific misreading — that the profile is current,
 that the linter really ran, that the runtime arm was used, that unlisted members were skipped
 on purpose, and that this is a code review rather than a conformance certificate.
+
+When the profile is not tracked — the repo ignores `.claude` and the user declined the
+`.gitignore` change — the first line has to say so, because "Profile: …" otherwise reads as
+though the whole team is auditing against the same rules:
+
+```
+Profile: .claude/a11y/profile.md (2026-08-11) · local-only, not tracked · Jurisdictions: DE, US
+```
+
+The profile still works for whoever wrote it. What is lost is consistency across the team, and
+a teammate reading this report should be able to tell.
 
 ## Finding card (ledger)
 

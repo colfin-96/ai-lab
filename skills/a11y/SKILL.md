@@ -184,5 +184,6 @@ has an opt-in hook for anyone who wants the check wired to file writes.
 | `references/report-format.md` | writing findings or the ledger |
 | `references/framework-notes.md` | auditing Angular, or any framework-specific idiom |
 | `references/regional/de.md` | profile lists `DE` |
+| `references/regional/eu.md` | profile lists `EU`, or any EU member state — load alongside a national overlay, not instead of it |
 | `references/regional/us.md` | profile lists `US` |
 | `references/hook-snippet.md` | the user wants automatic enforcement on file writes |

@@ -82,7 +82,12 @@ expected for commercial software — `DE + US` is a perfectly ordinary answer, a
 loaded additively.
 
 You may infer a starting guess (an `Impressum` route, a `de-DE` locale, a currency, a TLD) but
-confirm it rather than assuming. Overlay files currently exist for `DE` and `US`.
+confirm it rather than assuming. Overlay files currently exist for `DE`, `EU` and `US`.
+
+`EU` is the fallback for any member state without its own file, and it is **additive rather than
+alternative**: a German repo loads both `eu.md` (the directives and EN 301 549 version state) and
+`de.md` (the national transposition and its extra duties). Record every applicable jurisdiction
+rather than collapsing them to one.
 
 **Sector — public or private.** This is not in the code and it selects which law applies. In
 Germany, public bodies fall under BITV 2.0 while private-sector products fall under the BFSG;
@@ -119,9 +124,83 @@ adding a component library, or changing lint config. Nothing will warn you.
 
 Close with the conformance target: `WCAG 2.2 Level A + AA`, plus jurisdictions and sector.
 
-## Finally
+## Finally — check tracking in both directions
 
-Ensure `.claude/a11y/findings.md` is gitignored, since the ledger is working state that would
-otherwise turn every PR into a diff of somebody's todo list. **Ask before editing `.gitignore`**
-— it is a tracked file and a silent edit surprises people in review. Then report what you
-detected, what you had to ask, and what came back `unknown`.
+Two files, two opposite requirements, and both need verifying. Checking only one is how the
+profile ends up silently untracked.
+
+```bash
+git check-ignore -v .claude/a11y/profile.md   # must print NOTHING — it has to be committable
+git check-ignore -v .claude/a11y/findings.md  # must print a rule — it has to be ignored
+```
+
+**The profile must be trackable.** Plenty of repos ignore `.claude` wholesale, since teams
+often exclude agent directories by default. When they do, the profile silently stays untracked:
+every teammate re-profiles from scratch, gets different answers, and the audits diverge — which
+is the exact failure that committing the profile exists to prevent. A `git check-ignore` that
+prints a matching rule is that failure, caught early.
+
+**The ledger must be ignored**, because it is working state that churns every run and would
+turn every PR into a diff of somebody's todo list.
+
+### When the profile path is ignored
+
+A single negation does not work, and it is worth understanding why before writing one: **git
+does not descend into an excluded directory**, so a negation for a file inside it is never even
+considered. Both of these leave the profile ignored:
+
+```gitignore
+.claude/                          # ← fails
+!.claude/a11y/profile.md
+
+.claude/*                         # ← also fails: .claude/a11y is excluded, so git stops there
+!.claude/a11y/profile.md
+```
+
+Each directory on the path has to be re-admitted before the file can be:
+
+```gitignore
+.claude/*
+!.claude/a11y/
+.claude/a11y/*
+!.claude/a11y/profile.md
+```
+
+That shape keeps everything else under `.claude` excluded — `settings.local.json`, `skills/`,
+`worktrees/`, and the ledger — while making the profile committable. Adapt it to the repo's
+existing rules rather than pasting it blindly: the goal is to preserve every exclusion that is
+already there and open exactly one hole.
+
+**Ask before editing `.gitignore`.** It is a tracked file, in both the add-an-entry case and
+this un-ignore case, and a silent edit surprises whoever reads the PR. Show the exact lines you
+intend to add and why.
+
+### Verify, then record
+
+After any edit, re-run both checks. `check-ignore` is the only thing that settles it — reading
+the file and reasoning about precedence is exactly where this goes wrong.
+
+Record the outcome in the profile so a later run does not re-litigate it:
+
+```
+profile_tracked: yes — .gitignore re-admits .claude/a11y/profile.md (verified 2026-08-11)
+ledger_ignored: yes — .gitignore:12 `.claude/*`
+```
+
+### When the user declines
+
+Fine, and not a blocker. The profile stays local and unshared. Record it:
+
+```
+profile_tracked: no — user declined the .gitignore change; profile is local-only
+```
+
+Then make sure the report footer says so rather than implying teammates share these rules —
+`references/report-format.md` covers the wording. A local-only profile still works perfectly for
+the person who wrote it; the only thing lost is consistency across the team, and that is worth
+stating out loud instead of quietly assuming.
+
+## Report
+
+Close by reporting what you detected, what you had to ask, what came back `unknown`, and the
+tracking state of both files.
