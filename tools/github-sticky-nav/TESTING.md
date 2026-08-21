@@ -64,10 +64,16 @@ not attempted a fifth time the same way:
 | 1.4.0 | pin our own shrunken title | worked, but looked redundant — reverted |
 | 1.4.1 | no title, rely on GitHub's bar | title absent in Chrome: our own CSS was fading GitHub's bar out |
 | 1.5.0 | stop fading it, stack below it | still absent — under our pinning GitHub never reveals its bar at all, because the real title never leaves the viewport |
-| 1.6.0 | pin our own title again, fade GitHub's bar only while ours is showing | current |
+| 1.6.0 | pin our own title again, fade GitHub's bar only while ours is showing | title appeared, but at full size and wrapping |
+| 1.6.1 | shrink the title's descendants too, not just the heading | current |
 
 Working assumption: **GitHub's bar cannot be relied on while we pin the header.**
 It is the fallback for when the title cannot be found, not the primary path.
+
+The 1.6.1 lesson is separate and worth keeping: what we mark as the title is a
+heading that wraps its text in further elements, and at least one of them (the
+issue number) sets its own font size. Styling the heading alone leaves those
+children at full size, so the shrink has to apply to `.ghsn-title *` as well.
 
 | # | Check | Expected | Status |
 |---|---|---|---|

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GitHub Sticky Repo Nav
 // @namespace    https://github.com/colfin-96/ai-lab
-// @version      1.6.0
+// @version      1.6.1
 // @description  Keeps GitHub's repo nav and the PR tab strip (Conversation / Commits / Checks / Files changed) reachable: they hide as you scroll down and slide back in the moment you scroll up.
 // @author       colfin-96
 // @match        https://github.com/*
@@ -143,13 +143,22 @@ html.ghsn-active.ghsn-pinned.ghsn-tabs .ghsn-tabstrip {
  * instead would avoid that but save no space at all, which defeats the object. */
 
 html.ghsn-active.ghsn-pinned .ghsn-title {
-  font-size: var(--ghsn-title-size) !important;
-  line-height: 1.35 !important;
   margin-top: 0 !important;
   margin-bottom: 0 !important;
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
+}
+
+/* The descendants matter as much as the element itself. What we mark is a
+ * heading that wraps the text in further elements — the issue number, for one,
+ * carries its own explicit size — so setting font-size on the heading alone
+ * leaves those children rendering at full size. */
+
+html.ghsn-active.ghsn-pinned .ghsn-title,
+html.ghsn-active.ghsn-pinned .ghsn-title * {
+  font-size: var(--ghsn-title-size) !important;
+  line-height: 1.35 !important;
 }
 
 /* ---- GitHub's own fixed sticky bars -------------------------------- */
