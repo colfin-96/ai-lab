@@ -1,11 +1,14 @@
 # GitHub Sticky Repo Nav
 
-Keeps two strips reachable without scrolling back to the top of the page:
+Keeps the bits you actually navigate with reachable, without scrolling back to
+the top of the page:
 
 1. the repository nav — **Code / Pull requests / Agents / Actions / Insights / Settings**
-2. the pull-request tabs — **Conversation / Commits / Checks / Files changed**
+2. the pull-request state row — the **Open / Merged / Closed** badge and the
+   "merged N commits into `main` from `branch`" line
+3. the pull-request tabs — **Conversation / Commits / Checks / Files changed**
 
-Both slide out of the way while you scroll **down**, and come straight back when you:
+They slide out of the way while you scroll **down**, and come straight back when you:
 
 * scroll **up** even a little,
 * move the mouse pointer to the very top edge of the window, or
@@ -16,7 +19,9 @@ never end up with three stacked decks — scroll down and it's back, exactly as
 stock. On pages with no tab strip (the diff view, code browsing) GitHub's bar is
 simply pushed down to clear the repo nav instead.
 
-Screen cost: **88px** while the strips are showing, **0px** while you scroll down.
+Screen cost: roughly **120px** while the strips are showing, **0px** while you
+scroll down. Drop the state row with `includeStateRow: false` to get back to
+about 88px.
 
 ## Two ways to install
 
@@ -98,6 +103,7 @@ version in this repo, edit `extension/sticky-nav.js` and regenerate — see
 | `threshold` | `5` | Pixels of scrolling before the bar reacts. Raise it if a twitchy trackpad flickers the bar. |
 | `revealOnPointerTop` | `true` | `false` turns off "reveal when the mouse touches the top edge". |
 | `pinSubTabs` | `true` | `false` pins only the repo nav, leaving the PR tabs alone (and GitHub's own title bar untouched). |
+| `includeStateRow` | `true` | `false` pins the tab strip without the state row above it — the Open/Merged badge and the "merged N commits into main" line — saving about 32px. |
 | `pointerZone` | `8` | How close to the top edge (px) the pointer must get. |
 | `extraOffsetSelectors` | `[]` | CSS selectors for any *other* fixed bar that sits at `top: 0` and should be pushed down while the nav shows. |
 
@@ -111,9 +117,9 @@ Both strips use the same trick. Each one lives at the bottom of a taller,
 non-sticky block — `div.js-header-wrapper` for the repo nav, the PR page-header
 for the tabs. The script makes that block `position: sticky` with a
 **negative** `top`, measured at runtime, so everything above the strip (the
-enterprise banner, the repo title, the PR title and branch line) scrolls off the
-top edge while the strip itself stays put. `transform: translateY(...)` then
-hides or reveals them together.
+enterprise banner, the repo title, the PR title) scrolls off the top edge while
+the strip itself stays put. `transform: translateY(...)` then hides or reveals
+them together.
 
 It has to be the block rather than the `<nav>` itself: a sticky element can only
 travel inside its own parent's box, so stickying a nav directly would pin it for
@@ -126,8 +132,12 @@ parent that extends below it. `div.js-header-wrapper` is tried first as a fast
 path, but only if it passes the same test, so a renamed or restructured wrapper
 falls back to the climb rather than pinning something useless.
 
-The rows that scroll off the top of the PR block land *behind* the repo nav
-strip, which is opaque and sits one z-index higher, so they're never visible.
+How much of the PR block stays on screen is set by which row we treat as its
+top edge. By default that is the state row, found by locating the Open/Merged
+badge and taking whichever direct child of the block contains it; with
+`includeStateRow: false` it is the tab strip instead. Either way the rows above
+it scroll off and land *behind* the repo nav strip, which is opaque and sits one
+z-index higher, so they're never visible.
 
 ### When it gets it wrong
 

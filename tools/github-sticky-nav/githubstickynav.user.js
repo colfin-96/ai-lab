@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GitHub Sticky Repo Nav
 // @namespace    https://github.com/colfin-96/ai-lab
-// @version      1.2.0
+// @version      1.3.0
 // @description  Keeps GitHub's repo nav and the PR tab strip (Conversation / Commits / Checks / Files changed) reachable: they hide as you scroll down and slide back in the moment you scroll up.
 // @author       colfin-96
 // @match        https://github.com/*
@@ -44,7 +44,9 @@
  *
  * Two strips are pinned to the top of the viewport:
  *   1. the repository nav  (Code / Pull requests / Agents / Actions / ...)
- *   2. the pull-request tab strip (Conversation / Commits / Checks / Files changed)
+ *   2. the pull-request tab strip (Conversation / Commits / Checks / Files
+ *      changed), optionally with the state row above it — the Open/Merged badge
+ *      and the "merged N commits into main from ..." line
  * Both auto-hide while you scroll down and slide back in when you scroll up.
  *
  * While they are showing, GitHub's own sticky PR title bar fades out, so you
@@ -58,7 +60,7 @@
 :root {
   --ghsn-nav-h: 48px;      /* height of the repo nav strip                    */
   --ghsn-pin-top: 0px;     /* repo nav: navH - full header height (negative)  */
-  --ghsn-tabs-h: 0px;      /* height of the PR tab strip (0 = none on page)   */
+  --ghsn-tabs-h: 0px;      /* visible height of the PR strip (0 = none here)  */
   --ghsn-tabs-top: 0px;    /* PR block: navH - strip offset (negative)        */
   --ghsn-tabs-shift: 0px;  /* how far to lift the PR block when hiding        */
   --ghsn-dur: 160ms;       /* slide / fade duration                           */
@@ -81,8 +83,9 @@ html.ghsn-active.ghsn-pinned.ghsn-hidden .ghsn-wrapper {
 
 /* ---- strip 2: the pull-request tab strip ---------------------------- */
 /* We pin the whole PR page-header block with a negative offset so only its
- * bottom edge — the tab strip — stays on screen. The rows above it land
- * behind strip 1, which is opaque, so they are never visible. */
+ * lower rows stay on screen — the tab strip, plus the state row above it when
+ * includeStateRow is on. Everything higher up lands behind strip 1, which is
+ * opaque, so it is never visible. */
 
 html.ghsn-active.ghsn-tabs .ghsn-tabsblock {
   position: sticky !important;
@@ -101,6 +104,16 @@ html.ghsn-active.ghsn-tabs.ghsn-pinned.ghsn-hidden .ghsn-tabsblock {
 
 html.ghsn-active.ghsn-pinned .ghsn-nav,
 html.ghsn-active.ghsn-pinned .ghsn-tabstrip {
+  background-color: var(--bgColor-default, var(--color-canvas-default, #ffffff)) !important;
+}
+
+/* The pinned PR strip can be more than just the tab nav — with includeStateRow
+ * it starts at the "Merged / merged N commits into main" row — so the block
+ * itself has to be opaque, or page content shows through the rows between the
+ * state row and the tabs. The rows above, which sit behind the repo nav, are
+ * covered by it: the nav is opaque and one z-index higher. */
+
+html.ghsn-active.ghsn-pinned.ghsn-tabs .ghsn-tabsblock {
   background-color: var(--bgColor-default, var(--color-canvas-default, #ffffff)) !important;
 }
 
@@ -195,7 +208,9 @@ html.ghsn-active {
  *
  * Pins two strips to the top of the window:
  *   1. the repository nav  (Code / Pull requests / Agents / Actions / ...)
- *   2. the pull-request tab strip (Conversation / Commits / Checks / Files changed)
+ *   2. the pull-request tab strip (Conversation / Commits / Checks / Files
+ *      changed), with the state row above it — the Open/Merged badge and the
+ *      "merged N commits into main from ..." line — unless that is turned off
  *
  * They slide out of the way when you scroll down and come straight back when
  * you scroll up, touch the top edge of the window with the mouse, or tab into
@@ -222,6 +237,10 @@ html.ghsn-active {
     pointerZone: 8,
     // Also pin the PR tab strip. Set false for the repo nav alone.
     pinSubTabs: true,
+    // Keep the state row — the Open/Merged/Closed badge and the "merged N
+    // commits into main from ..." line — visible above the tab strip. Costs the
+    // height of that one row. Set false to show the tab strip alone.
+    includeStateRow: true,
     // Extra selectors for other fixed bars that sit at top: 0 and should be
     // pushed down while the nav shows. Matching elements get .ghsn-offset.
     extraOffsetSelectors: [],
@@ -239,14 +258,27 @@ html.ghsn-active {
     '[class*="PullRequestHeaderTabNav-module__TabNav"]',
   ];
 
+  // The Open / Merged / Closed / Draft badge. We don't pin this element itself —
+  // we pin whichever row of the page-header block contains it, which is the line
+  // reading "<user> merged N commits into main from <branch>".
+  const STATE_SELECTORS = [
+    '[class*="StateLabel"]',
+    '[class*="stateLabel"]',
+    '.State',
+    '.gh-header-meta .State',
+  ];
+
   const root = document.documentElement;
 
-  let nav = null;      // the repo nav <nav>
-  let wrapper = null;  // block we pin so the repo nav stays put
-  let tabs = null;     // the PR tab strip <nav>
-  let block = null;    // block we pin so the tab strip stays put
+  let nav = null;       // the repo nav <nav>
+  let wrapper = null;   // block we pin so the repo nav stays put
+  let tabs = null;      // the PR tab strip <nav>
+  let block = null;     // block we pin so the tab strip stays put
+  let anchorRow = null; // topmost row of that block we keep on screen
 
-  const geo = { navH: 0, wrapH: 0, tabsH: 0, tabsTop: 0, tabsShift: 0 };
+  // stripH is the height of everything we keep visible from the PR block: the
+  // tab strip alone, or the state row plus the tab strip when anchorRow is set.
+  const geo = { navH: 0, wrapH: 0, stripH: 0, tabsTop: 0, tabsShift: 0 };
 
   let lastY = 0;
   let hidden = false;
@@ -315,6 +347,31 @@ html.ghsn-active {
     return el;
   };
 
+  // Which row of the PR page-header block should be the top of the pinned strip.
+  // The state badge sits somewhere inside that row, so find the badge and climb
+  // to whichever direct child of the block contains it.
+  //
+  // Resolved once per attach rather than per frame: this is a querySelector over
+  // the header block, and the scroll path already does enough work.
+  const findAnchorRow = () => {
+    if (!CONFIG.includeStateRow || !block || !tabs) return null;
+
+    let badge = null;
+    for (const sel of STATE_SELECTORS) {
+      badge = block.querySelector(sel);
+      if (badge) break;
+    }
+    if (!badge || badge === tabs || tabs.contains(badge)) return null;
+
+    let row = badge;
+    while (row.parentElement && row.parentElement !== block) row = row.parentElement;
+    if (row.parentElement !== block || row === tabs || row.contains(tabs)) return null;
+
+    // Only useful if it really sits above the tab strip.
+    if (row.getBoundingClientRect().top >= tabs.getBoundingClientRect().top) return null;
+    return row;
+  };
+
   // Enough slack below the block for pinning to be worth anything at all. A
   // block whose parent runs out a few pixels down would unpin almost at once.
   const hasTravelRoom = (el) => {
@@ -346,8 +403,8 @@ html.ghsn-active {
 
     // Strip 2 is optional: plenty of pages don't have one.
     if (!tabs || !tabs.isConnected || !block || !block.isConnected) {
-      if (geo.tabsH !== 0) {
-        geo.tabsH = 0;
+      if (geo.stripH !== 0) {
+        geo.stripH = 0;
         setVar('--ghsn-tabs-h', 0);
       }
       root.classList.remove('ghsn-tabs');
@@ -356,22 +413,26 @@ html.ghsn-active {
 
     const tr = tabs.getBoundingClientRect();
     const br = block.getBoundingClientRect();
-    const tabsH = Math.round(tr.height);
-    const offset = Math.round(tr.top - br.top);   // strip's position in the block
+    // The strip runs from the top of the anchor row — the state row, when we
+    // found one — down to the bottom of the tab strip. Without an anchor row
+    // that is just the tab strip itself.
+    const top = anchorRow && anchorRow.isConnected ? anchorRow.getBoundingClientRect().top : tr.top;
+    const stripH = Math.round(tr.bottom - top);
+    const offset = Math.round(top - br.top);      // strip's position in the block
     const blockH = Math.round(br.height);
-    if (!tabsH || !blockH) return true;
+    if (stripH <= 0 || !blockH) return true;
 
     const tabsTop = navH - offset;                // lands the strip below strip 1
     // Lift far enough to clear whichever reaches lower — the strip itself (it
     // can overflow its block's measured height) or the block's bottom edge —
     // plus a few px so the drop shadow doesn't smudge the top of the window.
-    const tabsShift = navH + Math.max(tabsH, blockH - offset) + 4;
+    const tabsShift = navH + Math.max(stripH, blockH - offset) + 4;
 
-    if (tabsH !== geo.tabsH || tabsTop !== geo.tabsTop || tabsShift !== geo.tabsShift) {
-      geo.tabsH = tabsH;
+    if (stripH !== geo.stripH || tabsTop !== geo.tabsTop || tabsShift !== geo.tabsShift) {
+      geo.stripH = stripH;
       geo.tabsTop = tabsTop;
       geo.tabsShift = tabsShift;
-      setVar('--ghsn-tabs-h', tabsH);
+      setVar('--ghsn-tabs-h', stripH);
       setVar('--ghsn-tabs-top', tabsTop);
       setVar('--ghsn-tabs-shift', tabsShift);
     }
@@ -410,9 +471,11 @@ html.ghsn-active {
   const verifyPin = () => {
     if (Math.abs(Math.round(nav.getBoundingClientRect().top)) > PIN_TOLERANCE) return false;
 
-    if (geo.tabsH && tabs && tabs.isConnected) {
-      const tabsTop = Math.round(tabs.getBoundingClientRect().top);
-      if (Math.abs(tabsTop - geo.navH) > PIN_TOLERANCE) return false;
+    if (geo.stripH && tabs && tabs.isConnected) {
+      // Whatever we made the top of the strip is what should land at navH.
+      const strip = anchorRow && anchorRow.isConnected ? anchorRow : tabs;
+      const stripTop = Math.round(strip.getBoundingClientRect().top);
+      if (Math.abs(stripTop - geo.navH) > PIN_TOLERANCE) return false;
     }
     return true;
   };
@@ -422,7 +485,7 @@ html.ghsn-active {
     clearMarks();
     clearExtraOffsets();
     ro?.disconnect();
-    nav = wrapper = tabs = block = null;
+    nav = wrapper = tabs = block = anchorRow = null;
     hidden = false;
   };
 
@@ -508,13 +571,15 @@ html.ghsn-active {
     if (tabs && block && block !== tabs) {
       tabs.classList.add('ghsn-tabstrip');
       block.classList.add('ghsn-tabsblock');
+      anchorRow = findAnchorRow();
       ro?.observe(tabs);
       ro?.observe(block);
+      if (anchorRow) ro?.observe(anchorRow);
     } else {
-      tabs = block = null;
+      tabs = block = anchorRow = null;
       root.classList.remove('ghsn-tabs');
       setVar('--ghsn-tabs-h', 0);
-      geo.tabsH = 0;
+      geo.stripH = 0;
     }
   };
 
@@ -553,7 +618,7 @@ html.ghsn-active {
     ro.observe(nav);
     ro.observe(wrapper);
 
-    tabs = block = null;
+    tabs = block = anchorRow = null;
     attachTabs();
 
     if (!measure()) {

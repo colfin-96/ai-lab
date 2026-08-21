@@ -2,7 +2,9 @@
  *
  * Two strips are pinned to the top of the viewport:
  *   1. the repository nav  (Code / Pull requests / Agents / Actions / ...)
- *   2. the pull-request tab strip (Conversation / Commits / Checks / Files changed)
+ *   2. the pull-request tab strip (Conversation / Commits / Checks / Files
+ *      changed), optionally with the state row above it — the Open/Merged badge
+ *      and the "merged N commits into main from ..." line
  * Both auto-hide while you scroll down and slide back in when you scroll up.
  *
  * While they are showing, GitHub's own sticky PR title bar fades out, so you
@@ -16,7 +18,7 @@
 :root {
   --ghsn-nav-h: 48px;      /* height of the repo nav strip                    */
   --ghsn-pin-top: 0px;     /* repo nav: navH - full header height (negative)  */
-  --ghsn-tabs-h: 0px;      /* height of the PR tab strip (0 = none on page)   */
+  --ghsn-tabs-h: 0px;      /* visible height of the PR strip (0 = none here)  */
   --ghsn-tabs-top: 0px;    /* PR block: navH - strip offset (negative)        */
   --ghsn-tabs-shift: 0px;  /* how far to lift the PR block when hiding        */
   --ghsn-dur: 160ms;       /* slide / fade duration                           */
@@ -39,8 +41,9 @@ html.ghsn-active.ghsn-pinned.ghsn-hidden .ghsn-wrapper {
 
 /* ---- strip 2: the pull-request tab strip ---------------------------- */
 /* We pin the whole PR page-header block with a negative offset so only its
- * bottom edge — the tab strip — stays on screen. The rows above it land
- * behind strip 1, which is opaque, so they are never visible. */
+ * lower rows stay on screen — the tab strip, plus the state row above it when
+ * includeStateRow is on. Everything higher up lands behind strip 1, which is
+ * opaque, so it is never visible. */
 
 html.ghsn-active.ghsn-tabs .ghsn-tabsblock {
   position: sticky !important;
@@ -59,6 +62,16 @@ html.ghsn-active.ghsn-tabs.ghsn-pinned.ghsn-hidden .ghsn-tabsblock {
 
 html.ghsn-active.ghsn-pinned .ghsn-nav,
 html.ghsn-active.ghsn-pinned .ghsn-tabstrip {
+  background-color: var(--bgColor-default, var(--color-canvas-default, #ffffff)) !important;
+}
+
+/* The pinned PR strip can be more than just the tab nav — with includeStateRow
+ * it starts at the "Merged / merged N commits into main" row — so the block
+ * itself has to be opaque, or page content shows through the rows between the
+ * state row and the tabs. The rows above, which sit behind the repo nav, are
+ * covered by it: the nav is opaque and one z-index higher. */
+
+html.ghsn-active.ghsn-pinned.ghsn-tabs .ghsn-tabsblock {
   background-color: var(--bgColor-default, var(--color-canvas-default, #ffffff)) !important;
 }
 
