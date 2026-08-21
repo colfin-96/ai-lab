@@ -33,7 +33,7 @@ For each page: scroll down past the header, then scroll up a little.
 | # | Page | Expected | Status |
 |---|---|---|---|
 | 1 | Repo home (`/owner/repo`) | Repo nav (Code / Issues / Pull requests / …) sticks at the top. Slides away on scroll down, returns on scroll up. | ✅ 1.3.0 |
-| 2 | PR → Conversation | Repo nav on top, then the shrunk PR title, then the state row (Open/Merged badge + "merged N commits into main from …"), then the PR tabs. GitHub's own sticky PR title bar is *not* visible while the strips show. | ✅ 1.3.1 (state row); ⬜ title, new in 1.4.0 |
+| 2 | PR → Conversation | Repo nav on top, then the state row (Open/Merged badge + "merged N commits into main from …"), then the PR tabs. | ✅ 1.3.1 |
 | 3 | PR → Files changed | Same strips. The diff's own sticky file headers still work and do not overlap our strips. | ⬜ |
 | 4 | Issue page | Repo nav plus the issue state row and tab strip, same shape as a PR. | ⬜ |
 | 5 | Code browsing (`/blob/…`) | Repo nav only — no tab strip on this page. GitHub's sticky file header is pushed down to clear our nav rather than hidden. | ⬜ |
@@ -54,10 +54,13 @@ For each page: scroll down past the header, then scroll up a little.
 | 15 | Print | <kbd>Cmd</kbd>+<kbd>P</kbd> on a long PR | No floating bar in the print preview | ⬜ |
 | 16 | Back / forward | Navigate away and press Back | Strips work on the restored page | ⬜ |
 
-## The state row and title
+## The state row
 
-`includeStateRow` and `includeTitle` are both on by default, so the pinned PR
-strip starts at the title rather than the tab strip.
+`includeStateRow` is on by default, which makes the pinned PR strip start at the
+state row rather than the tab strip.
+
+The PR title is deliberately not pinned — GitHub's own sticky header shows it
+already, so 1.4.0 added it and 1.4.1 took it back out.
 
 | # | Check | Expected | Status |
 |---|---|---|---|
@@ -65,11 +68,7 @@ strip starts at the title rather than the tab strip.
 | 18 | Nothing shows through the strip | Scroll a PR with a long conversation. The whole pinned strip is opaque — no comment text sliding through the gap between the state row and the tabs | ⬜ |
 | 19 | Nothing extra below the strip | No blank band between the bottom of the tab strip and the page content. The block is painted opaque, so if GitHub's page-header block ever extends below its tab strip, that overhang would show up here | ⬜ |
 | 20 | Links in the state row work | Click the branch name and the author link while the strip is pinned | ⬜ |
-| 21 | `includeStateRow: false` | Set it, regenerate, reload: the state row goes, the title stays, and the fail-safe still passes | ⬜ |
-| 22 | Title is one small line | The pinned title is small and on a single line. Find a PR with a very long title: it ellipsises rather than wrapping | ⬜ |
-| 23 | The layout shift is tolerable | Scroll down past the header and back up. Content below the header shifts once as the title shrinks and grows. Judge whether it is acceptable — if not, raise `--ghsn-title-size` or set `includeTitle: false` | ⬜ |
-| 24 | Title row is actually shorter | Compare against `includeTitle: false`. The row's height may be floored by whatever sits beside the title — the `Code` button — in which case shrinking the text saves less than expected | ⬜ |
-| 25 | `includeTitle: false` | Back to 1.3.1 behaviour: state row and tabs, no title | ⬜ |
+| 21 | `includeStateRow: false` | Set it, regenerate, reload: back to the tab strip alone, roughly 32px shorter, and the fail-safe still passes | ⬜ |
 
 ### If the state row does not appear
 

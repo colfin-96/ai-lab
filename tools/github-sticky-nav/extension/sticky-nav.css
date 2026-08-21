@@ -4,8 +4,7 @@
  *   1. the repository nav  (Code / Pull requests / Agents / Actions / ...)
  *   2. the pull-request tab strip (Conversation / Commits / Checks / Files
  *      changed), optionally with the state row above it — the Open/Merged badge
- *      and the "merged N commits into main from ..." line — and the PR title,
- *      shrunk to a single line
+ *      and the "merged N commits into main from ..." line
  * Both auto-hide while you scroll down and slide back in when you scroll up.
  *
  * While they are showing, GitHub's own sticky PR title bar fades out, so you
@@ -23,7 +22,6 @@
   --ghsn-tabs-top: 0px;    /* PR block: navH - strip offset (negative)        */
   --ghsn-tabs-shift: 0px;  /* how far to lift the PR block when hiding        */
   --ghsn-dur: 160ms;       /* slide / fade duration                           */
-  --ghsn-title-size: 13px; /* PR title size while pinned (0 to keep it full)  */
 }
 
 /* ---- strip 1: the repository nav ------------------------------------ */
@@ -89,25 +87,6 @@ html.ghsn-active.ghsn-pinned.ghsn-tabs .ghsn-nav {
 
 html.ghsn-active.ghsn-pinned.ghsn-tabs .ghsn-tabstrip {
   box-shadow: 0 3px 6px -3px rgba(0, 0, 0, 0.12);
-}
-
-/* ---- the PR title, shrunk while pinned ----------------------------- */
-/* Only while pinned, so the top of the page keeps its full-size heading. One
- * line with an ellipsis: a long title would otherwise wrap and cost more
- * height than the whole point of shrinking it saves.
- *
- * Note this does change layout — the header block gets shorter as it pins, so
- * content below it shifts up once by the difference. Using transform: scale()
- * instead would avoid that but save no space at all, which defeats the object. */
-
-html.ghsn-active.ghsn-pinned .ghsn-title {
-  font-size: var(--ghsn-title-size) !important;
-  line-height: 1.35 !important;
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
 }
 
 /* ---- GitHub's own fixed sticky bars -------------------------------- */
