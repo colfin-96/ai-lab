@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GitHub Sticky Repo Nav
 // @namespace    https://github.com/colfin-96/ai-lab
-// @version      1.5.0
+// @version      1.6.0
 // @description  Keeps GitHub's repo nav and the PR tab strip (Conversation / Commits / Checks / Files changed) reachable: they hide as you scroll down and slide back in the moment you scroll up.
 // @author       colfin-96
 // @match        https://github.com/*
@@ -44,14 +44,13 @@
  *
  * Two strips are pinned to the top of the viewport:
  *   1. the repository nav  (Code / Pull requests / Agents / Actions / ...)
- *   2. the pull-request tab strip (Conversation / Commits / Checks / Files
- *      changed), optionally with the state row above it — the Open/Merged badge
- *      and the "merged N commits into main from ..." line
+ *   2. the pull-request title, state row and tab strip (Conversation / Commits /
+ *      Checks / Files changed)
  * Both auto-hide while you scroll down and slide back in when you scroll up.
  *
- * GitHub's own sticky PR header is kept — pushed down to sit between the two —
- * because it already shows the state badge, the title and the branch line.
- * sticky-nav.js measures its height so the tab strip stacks below it.
+ * GitHub's own sticky header is faded out while we are showing the title
+ * ourselves (.ghsn-owntitle), and otherwise kept and pushed below our nav, with
+ * sticky-nav.js measuring its height into --ghsn-ghbar-h.
  *
  * All geometry comes from CSS custom properties that sticky-nav.js measures at
  * runtime, so this keeps working when GitHub changes header heights, when the
@@ -65,6 +64,7 @@
   --ghsn-tabs-top: 0px;    /* PR block: navH - strip offset (negative)        */
   --ghsn-tabs-shift: 0px;  /* how far to lift the PR block when hiding        */
   --ghsn-ghbar-h: 0px;     /* GitHub's own sticky bar, 0 when not showing     */
+  --ghsn-title-size: 13px; /* PR title size while pinned                      */
   --ghsn-dur: 160ms;       /* slide / fade duration                           */
 }
 
@@ -133,6 +133,25 @@ html.ghsn-active.ghsn-pinned.ghsn-tabs .ghsn-tabstrip {
   box-shadow: 0 3px 6px -3px rgba(0, 0, 0, 0.12);
 }
 
+/* ---- the PR title, shrunk while pinned ----------------------------- */
+/* Only while pinned, so the top of the page keeps its full-size heading. One
+ * line with an ellipsis: a long title would otherwise wrap and cost more
+ * height than the whole point of shrinking it saves.
+ *
+ * Note this does change layout — the header block gets shorter as it pins, so
+ * content below it shifts up once by the difference. Using transform: scale()
+ * instead would avoid that but save no space at all, which defeats the object. */
+
+html.ghsn-active.ghsn-pinned .ghsn-title {
+  font-size: var(--ghsn-title-size) !important;
+  line-height: 1.35 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
 /* ---- GitHub's own fixed sticky bars -------------------------------- */
 
 html.ghsn-active.ghsn-pinned [class*="use-sticky-header-module__stickyHeader"],
@@ -164,6 +183,18 @@ html.ghsn-active.ghsn-pinned.ghsn-hidden [class*="StickyIssueHeader-module"],
 html.ghsn-active.ghsn-pinned.ghsn-hidden .gh-header-sticky,
 html.ghsn-active.ghsn-pinned.ghsn-hidden .ghsn-offset {
   top: 0 !important;
+}
+
+/* We are showing the title ourselves, so GitHub's bar would be a second copy of
+ * the same thing. Fading it also makes measureGhBar report zero height, so the
+ * tab strip closes the gap without needing to be told separately. */
+
+html.ghsn-active.ghsn-pinned.ghsn-owntitle:not(.ghsn-hidden) [class*="use-sticky-header-module__stickyHeader"],
+html.ghsn-active.ghsn-pinned.ghsn-owntitle:not(.ghsn-hidden) [class*="StickyPullRequestHeader-module"],
+html.ghsn-active.ghsn-pinned.ghsn-owntitle:not(.ghsn-hidden) [class*="StickyIssueHeader-module"],
+html.ghsn-active.ghsn-pinned.ghsn-owntitle:not(.ghsn-hidden) .gh-header-sticky {
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* ---- anchor jumps shouldn't land underneath the pinned strips ------- */
@@ -203,14 +234,17 @@ html.ghsn-active {
  *
  * Pins two strips to the top of the window:
  *   1. the repository nav  (Code / Pull requests / Agents / Actions / ...)
- *   2. the pull-request tab strip (Conversation / Commits / Checks / Files
- *      changed), stacked below GitHub's own sticky header
+ *   2. the pull-request title, state row and tab strip (Conversation / Commits /
+ *      Checks / Files changed), with the title shrunk to a single line
  *
  * They slide out of the way when you scroll down and come straight back when
  * you scroll up, touch the top edge of the window with the mouse, or tab into
- * them. GitHub's own sticky PR header is kept rather than faded out, pushed down
- * to sit between the two: it already shows the state badge, the title and the
- * branch line, so rebuilding that ourselves would only duplicate it.
+ * them.
+ *
+ * GitHub has a sticky header of its own carrying the same badge and title. When
+ * we are showing ours it is faded out as a duplicate; when we cannot find the
+ * title to show, it is kept and pushed down between our two strips instead, and
+ * its height is measured so the tab strip stacks below it.
  *
  * If the strips do not land where the geometry predicted — because GitHub has
  * restructured its header and we pinned the wrong block — the script strips its
@@ -232,12 +266,12 @@ html.ghsn-active {
     pointerZone: 8,
     // Also pin the PR tab strip. Set false for the repo nav alone.
     pinSubTabs: true,
-    // Keep our own copy of the state row — the Open/Merged/Closed badge and the
-    // "merged N commits into main from ..." line — above the tab strip. Off by
-    // default because GitHub's own sticky header already shows that, plus the
-    // title, and we now let it through instead of fading it out. Turn this on if
-    // GitHub's bar ever stops appearing.
-    includeStateRow: false,
+    // Keep the state row — the Open/Merged/Closed badge and the "merged N
+    // commits into main from ..." line — above the tab strip.
+    includeStateRow: true,
+    // Keep the PR/issue title too, shrunk to one line so it costs as little
+    // height as possible. Size lives in --ghsn-title-size in the CSS.
+    includeTitle: true,
     // Extra selectors for other fixed bars that sit at top: 0 and should be
     // pushed down while the nav shows. Matching elements get .ghsn-offset.
     extraOffsetSelectors: [],
@@ -278,6 +312,16 @@ html.ghsn-active {
     '.gh-header-meta .State',
   ];
 
+  // The PR/issue title. Named classes first, then any visible <h1> above the tab
+  // strip — the title has been an <h1> through every GitHub redesign so far.
+  const TITLE_SELECTORS = [
+    '.gh-header-title',
+    '[class*="TitleArea"] h1',
+    'h1[class*="Title"]',
+    '[data-testid="issue-title"]',
+    'h1',
+  ];
+
   const root = document.documentElement;
 
   let nav = null;       // the repo nav <nav>
@@ -285,6 +329,7 @@ html.ghsn-active {
   let tabs = null;      // the PR tab strip <nav>
   let block = null;     // block we pin so the tab strip stays put
   let stateBadge = null; // Open/Merged badge, when we are keeping its row visible
+  let title = null;      // PR/issue title, when we are keeping it on screen
   let ghBar = null;      // GitHub's own sticky header, once it turns up
   let ghBarSeen = 0;     // when we last looked for it
 
@@ -372,20 +417,32 @@ html.ghsn-active {
   // We use the badge only for its position — the top of the pinned strip is
   // derived from where the badge sits, not from any assumption about which
   // element is "the row". That keeps working however GitHub nests the header.
-  const findStateBadge = () => {
-    if (!CONFIG.includeStateRow || !tabs) return null;
+  const findMarkerAbove = (selectors) => {
+    if (!tabs) return null;
 
     const tabsTop = tabs.getBoundingClientRect().top;
-    for (const sel of STATE_SELECTORS) {
+    for (const sel of selectors) {
+      let best = null;
+      let bestTop = -Infinity;
       for (const el of document.querySelectorAll(sel)) {
         if (tabs.contains(el)) continue;
         const r = el.getBoundingClientRect();
         // Must be visible and above the tab strip to be worth keeping on screen.
-        if (r.height > 0 && r.top < tabsTop) return el;
+        if (r.height <= 0 || r.top >= tabsTop) continue;
+        // Of several candidates take the lowest — the one belonging to this
+        // header rather than something further up the page.
+        if (r.top > bestTop) { best = el; bestTop = r.top; }
       }
+      if (best) return best;
     }
     return null;
   };
+
+  const findStateBadge = () =>
+    CONFIG.includeStateRow ? findMarkerAbove(STATE_SELECTORS) : null;
+
+  const findTitle = () =>
+    CONFIG.includeTitle ? findMarkerAbove(TITLE_SELECTORS) : null;
 
   // The badge has to be inside the block we pin, or pinning cannot keep it on
   // screen. When our block stopped short of it, widen to the nearest ancestor
@@ -472,6 +529,8 @@ html.ghsn-active {
     if (ghBarH !== geo.ghBarH) {
       geo.ghBarH = ghBarH;
       setVar('--ghsn-ghbar-h', ghBarH);
+      log("GitHub's bar", ghBar ? describe(ghBar) : 'not in the DOM',
+          '-> height', ghBarH);
     }
 
     // Strip 2 is optional: plenty of pages don't have one.
@@ -489,12 +548,14 @@ html.ghsn-active {
     // The strip runs from the top of the anchor row — the state row, when we
     // found one — down to the bottom of the tab strip. Without an anchor row
     // that is just the tab strip itself.
+    // Start at the highest marker we are keeping on screen, with a little
+    // headroom so its row isn't sheared off, and never above the block itself —
+    // we cannot show what we don't pin.
     let top = tr.top;
-    if (stateBadge && stateBadge.isConnected) {
-      const sr = stateBadge.getBoundingClientRect();
-      // A little headroom above the badge so its row doesn't look sheared off,
-      // and never above the block itself — we cannot show what we don't pin.
-      if (sr.height > 0 && sr.top < tr.top) top = Math.max(br.top, sr.top - STATE_PAD);
+    for (const marker of [stateBadge, title]) {
+      if (!marker || !marker.isConnected) continue;
+      const mr = marker.getBoundingClientRect();
+      if (mr.height > 0 && mr.top < top) top = Math.max(br.top, mr.top - STATE_PAD);
     }
     const stripH = Math.round(tr.bottom - top);
     const offset = Math.round(top - br.top);      // strip's position in the block
@@ -571,11 +632,11 @@ html.ghsn-active {
   };
 
   const standDown = () => {
-    root.classList.remove('ghsn-active', 'ghsn-pinned', 'ghsn-hidden', 'ghsn-tabs');
+    root.classList.remove('ghsn-active', 'ghsn-pinned', 'ghsn-hidden', 'ghsn-tabs', 'ghsn-owntitle');
     clearMarks();
     clearExtraOffsets();
     ro?.disconnect();
-    nav = wrapper = tabs = block = stateBadge = ghBar = null;
+    nav = wrapper = tabs = block = stateBadge = title = ghBar = null;
     hidden = false;
   };
 
@@ -645,6 +706,7 @@ html.ghsn-active {
     nav?.classList.remove('ghsn-nav');
     block?.classList.remove('ghsn-tabsblock');
     tabs?.classList.remove('ghsn-tabstrip');
+    title?.classList.remove('ghsn-title');
   };
 
   let ro = null;
@@ -660,28 +722,43 @@ html.ghsn-active {
     tabs?.classList.remove('ghsn-tabstrip');
     tabs = found;
     block = found ? climbToPageBlock(found) : null;
-    stateBadge = null;
+    title?.classList.remove('ghsn-title');
+    stateBadge = title = null;
 
     if (tabs && block && block !== tabs) {
-      // Resolve the badge before marking the block: covering it may mean pinning
-      // a wider block than the tab strip alone would have needed.
+      // Resolve the markers before marking the block: covering them may mean
+      // pinning a wider block than the tab strip alone would have needed.
       stateBadge = findStateBadge();
+      title = findTitle();
+
       if (stateBadge && !block.contains(stateBadge)) {
         const wider = widenToCover(block, stateBadge);
         if (wider) block = wider;
         else stateBadge = null;   // cannot pin it, so don't pretend we can
       }
+      if (title && !block.contains(title)) {
+        const wider = widenToCover(block, title);
+        if (wider) block = wider;
+        else title = null;
+      }
 
       tabs.classList.add('ghsn-tabstrip');
       block.classList.add('ghsn-tabsblock');
+      title?.classList.add('ghsn-title');
+      // Showing our own title makes GitHub's bar a duplicate, so the CSS fades
+      // it out — and measureGhBar then reads it as zero height, which keeps the
+      // geometry consistent without a second switch to keep in step.
+      root.classList.toggle('ghsn-owntitle', !!title);
       ro?.observe(tabs);
       ro?.observe(block);
       if (stateBadge) ro?.observe(stateBadge);
+      if (title) ro?.observe(title);
 
       log('tabs', describe(tabs), '| block', describe(block),
-          '| state badge', describe(stateBadge));
+          '| state badge', describe(stateBadge), '| title', describe(title));
     } else {
-      tabs = block = stateBadge = null;
+      root.classList.remove('ghsn-owntitle');
+      tabs = block = stateBadge = title = null;
       root.classList.remove('ghsn-tabs');
       setVar('--ghsn-tabs-h', 0);
       geo.stripH = 0;
@@ -726,7 +803,7 @@ html.ghsn-active {
     ro.observe(nav);
     ro.observe(wrapper);
 
-    tabs = block = stateBadge = null;
+    tabs = block = stateBadge = title = null;
     attachTabs();
 
     if (!measure()) {
