@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GitHub Sticky Repo Nav
 // @namespace    https://github.com/colfin-96/ai-lab
-// @version      1.7.1
+// @version      1.7.2
 // @description  Keeps GitHub's repo nav and the PR tab strip (Conversation / Commits / Checks / Files changed) reachable: they hide as you scroll down and slide back in the moment you scroll up.
 // @author       colfin-96
 // @match        https://github.com/*
@@ -188,6 +188,17 @@ html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-badge {
 
 html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-titlerow {
   padding-left: calc(var(--ghsn-badge-w) + var(--ghsn-badge-gap)) !important;
+}
+
+/* Lifting the badge pushes it outside its row's box, so anything clipping on
+ * the way up would shear its top off. We do not rely on clipping anywhere in
+ * here — the rows that scroll away are covered by the opaque nav above them,
+ * not cut off — so it is safe to switch off. */
+
+html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-badge,
+html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-staterow,
+html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-tabsblock {
+  overflow: visible !important;
 }
 
 /* Tighten the two lines towards each other, as the compact bar does. */

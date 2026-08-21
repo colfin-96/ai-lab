@@ -148,6 +148,17 @@ html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-titlerow {
   padding-left: calc(var(--ghsn-badge-w) + var(--ghsn-badge-gap)) !important;
 }
 
+/* Lifting the badge pushes it outside its row's box, so anything clipping on
+ * the way up would shear its top off. We do not rely on clipping anywhere in
+ * here — the rows that scroll away are covered by the opaque nav above them,
+ * not cut off — so it is safe to switch off. */
+
+html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-badge,
+html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-staterow,
+html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-tabsblock {
+  overflow: visible !important;
+}
+
 /* Tighten the two lines towards each other, as the compact bar does. */
 
 html.ghsn-active.ghsn-pinned .ghsn-titlerow,

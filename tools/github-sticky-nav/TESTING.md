@@ -67,7 +67,8 @@ not attempted a fifth time the same way:
 | 1.6.0 | pin our own title again, fade GitHub's bar only while ours is showing | title appeared, but at full size and wrapping |
 | 1.6.1 | shrink the title's descendants too, not just the heading | title shrank, but #123 beside it did not — it is a sibling, not a child |
 | 1.7.0 | shrink the whole title row; stand the badge to the left of both lines | no visible change: the row lookup required a direct child of the block and so matched nothing |
-| 1.7.1 | climb to the outermost ancestor that excludes the tabs; lift the badge in flow | current |
+| 1.7.1 | climb to the outermost ancestor that excludes the tabs; lift the badge in flow | issue number shrank correctly, badge moved left but its top was clipped |
+| 1.7.2 | switch off clipping on the badge's row and the block | current |
 
 Working assumption: **GitHub's bar cannot be relied on while we pin the header.**
 It is the fallback for when the title cannot be found, not the primary path.
@@ -105,7 +106,15 @@ Two separate lessons from the same area, both worth keeping:
 
 ### If something is not picked up
 
-Set `debug: true` in `CONFIG`, regenerate, reload, and read the page console:
+Set `debug: true` in `CONFIG` and read the page console.
+
+* **Userscript**: Tampermonkey icon → Dashboard → the script → change
+  `debug: false` to `debug: true` → save → reload the GitHub tab → open the
+  console. No rebuild needed; you are editing your installed copy.
+* **Extension**: edit `extension/sticky-nav.js`, run `node build.mjs`, hit the
+  reload icon on the extension's card in `chrome://extensions`, reload the tab.
+
+The log looks like this:
 
 ```
 [ghsn] nav nav.js-repo-nav | wrapper div.js-header-wrapper (known wrapper)
