@@ -68,7 +68,8 @@ not attempted a fifth time the same way:
 | 1.6.1 | shrink the title's descendants too, not just the heading | title shrank, but #123 beside it did not — it is a sibling, not a child |
 | 1.7.0 | shrink the whole title row; stand the badge to the left of both lines | no visible change: the row lookup required a direct child of the block and so matched nothing |
 | 1.7.1 | climb to the outermost ancestor that excludes the tabs; lift the badge in flow | issue number shrank correctly, badge moved left but its top was clipped |
-| 1.7.2 | switch off clipping on the badge's row and the block | current |
+| 1.7.2 | switch off clipping on the badge's row and the block | still wonky — the debug log showed why |
+| 1.7.3 | prefer the outermost of nested matches; never match an SVG | current |
 
 Working assumption: **GitHub's bar cannot be relied on while we pin the header.**
 It is the fallback for when the title cannot be found, not the primary path.
@@ -79,6 +80,12 @@ Two separate lessons from the same area, both worth keeping:
   elements, and the issue number sits *beside* it rather than inside — so
   shrinking the heading, or even its descendants, leaves `#123` full size. The
   shrink has to cover the whole row.
+* Marker selection must prefer the **outermost** of nested matches. Primer names
+  the icon inside a badge after the badge, so `[class*="StateLabel"]` matches
+  both the pill and the `<svg>` glyph inside it — and a "take the lowest
+  candidate" rule picks the glyph, because it is inset. That produced a 16px
+  indent and a clipped icon being lifted instead of the badge. Elements that are
+  not `HTMLElement` are skipped outright.
 * GitHub's header does not give each row its own child of the block. Title row,
   state row and tab strip commonly share one container, which is why any test of
   the form "is this a direct child of the block" matches nothing. This has broken
@@ -118,7 +125,7 @@ The log looks like this:
 
 ```
 [ghsn] nav nav.js-repo-nav | wrapper div.js-header-wrapper (known wrapper)
-[ghsn] tabs nav.…TabNav | block div.… | state badge span.…StateLabel… | title h1.…
+[ghsn] tabs nav.…TabNav | block header.… | state badge span.…StateLabel… | title h1.…
 [ghsn] GitHub's bar not in the DOM -> height 0
 [ghsn] geometry { navH: 48, wrapH: 96, stripH: 104, offset: 40, ghBarH: 0, … }
 ```
@@ -126,6 +133,11 @@ The log looks like this:
 `title none` or `state badge none` means no selector matched anything above the
 tab strip — copy the real class out of DevTools and add a selector. A stand-down
 logs the position it measured against the one it expected.
+
+Read the element names, not just whether they are present. A marker resolving to
+an `svg`, or to something obviously smaller than what you meant, is the failure
+mode that cost 1.7.0 through 1.7.2 — the classes were being applied all along,
+just to the wrong nodes.
 
 ## The fail-safe
 

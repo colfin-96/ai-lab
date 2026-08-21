@@ -195,16 +195,29 @@
 
     const tabsTop = tabs.getBoundingClientRect().top;
     for (const sel of selectors) {
-      let best = null;
-      let bestTop = -Infinity;
+      const found = [];
       for (const el of document.querySelectorAll(sel)) {
+        // SVG icons carry class names too, and Primer names the icon inside a
+        // badge after the badge — so an icon can match the badge's own selector.
+        // We want something we can restyle and measure, never a glyph.
+        if (!(el instanceof HTMLElement)) continue;
         if (tabs.contains(el)) continue;
         const r = el.getBoundingClientRect();
         // Must be visible and above the tab strip to be worth keeping on screen.
         if (r.height <= 0 || r.top >= tabsTop) continue;
-        // Of several candidates take the lowest — the one belonging to this
-        // header rather than something further up the page.
-        if (r.top > bestTop) { best = el; bestTop = r.top; }
+        found.push(el);
+      }
+      if (!found.length) continue;
+
+      // Prefer the outermost of any nested matches: the badge, not the label
+      // inside it. Then, among unrelated candidates, take the lowest — the one
+      // belonging to this header rather than something further up the page.
+      const outermost = found.filter((el) => !found.some((other) => other !== el && other.contains(el)));
+      let best = null;
+      let bestTop = -Infinity;
+      for (const el of outermost) {
+        const top = el.getBoundingClientRect().top;
+        if (top > bestTop) { best = el; bestTop = top; }
       }
       if (best) return best;
     }
@@ -530,8 +543,13 @@
 
   let ro = null;
 
-  const describe = (el) =>
-    !el ? 'none' : `${el.tagName.toLowerCase()}${el.className ? '.' + String(el.className).trim().split(/\s+/).join('.') : ''}`;
+  // classList rather than className: on an SVG, className is an
+  // SVGAnimatedString and stringifies to something useless.
+  const describe = (el) => {
+    if (!el) return 'none';
+    const classes = [...el.classList].join('.');
+    return el.tagName.toLowerCase() + (classes ? '.' + classes : '');
+  };
 
   const attachTabs = () => {
     const found = CONFIG.pinSubTabs ? findFirst(TAB_SELECTORS) : null;
