@@ -33,10 +33,10 @@ For each page: scroll down past the header, then scroll up a little.
 | # | Page | Expected | Status |
 |---|---|---|---|
 | 1 | Repo home (`/owner/repo`) | Repo nav (Code / Issues / Pull requests / …) sticks at the top. Slides away on scroll down, returns on scroll up. | ✅ 1.3.0 |
-| 2 | PR → Conversation | Repo nav on top, then the state row (Open/Merged badge + "merged N commits into main from …"), then the PR tabs. | ✅ 1.3.1 |
+| 2 | PR → Conversation | Three decks: repo nav, then GitHub's own sticky header (badge + title + branch line), then the PR tabs. Should match what stock Firefox shows, with our nav and tabs added. | ⬜ layout changed in 1.5.0 |
 | 3 | PR → Files changed | Same strips. The diff's own sticky file headers still work and do not overlap our strips. | ⬜ |
 | 4 | Issue page | Repo nav plus the issue state row and tab strip, same shape as a PR. | ⬜ |
-| 5 | Code browsing (`/blob/…`) | Repo nav only — no tab strip on this page. GitHub's sticky file header is pushed down to clear our nav rather than hidden. | ⬜ |
+| 5 | Code browsing (`/blob/…`) | Repo nav only — no tab strip on this page. GitHub's sticky file header is pushed down to clear our nav. | ⬜ |
 | 6 | Non-repo page (dashboard, `/settings`, a gist, a profile) | Nothing happens at all. No stray bar, no layout shift. | ⬜ |
 
 ## Behaviours to check once
@@ -54,13 +54,16 @@ For each page: scroll down past the header, then scroll up a little.
 | 15 | Print | <kbd>Cmd</kbd>+<kbd>P</kbd> on a long PR | No floating bar in the print preview | ⬜ |
 | 16 | Back / forward | Navigate away and press Back | Strips work on the restored page | ⬜ |
 
-## The state row
+## GitHub's own sticky header
 
-`includeStateRow` is on by default, which makes the pinned PR strip start at the
-state row rather than the tab strip.
+As of 1.5.0 we keep GitHub's bar instead of fading it out, because it already
+carries the badge, the title and the branch line. Our tab strip is stacked below
+it, using a height measured every frame.
 
-The PR title is deliberately not pinned — GitHub's own sticky header shows it
-already, so 1.4.0 added it and 1.4.1 took it back out.
+This replaced two earlier attempts at the same goal: 1.4.0 pinned a shrunken copy
+of the title (reverted in 1.4.1), and `includeStateRow` pinned our own copy of
+the badge row (now off by default). If GitHub's bar ever stops appearing,
+`includeStateRow: true` is the fallback.
 
 | # | Check | Expected | Status |
 |---|---|---|---|
@@ -68,7 +71,13 @@ already, so 1.4.0 added it and 1.4.1 took it back out.
 | 18 | Nothing shows through the strip | Scroll a PR with a long conversation. The whole pinned strip is opaque — no comment text sliding through the gap between the state row and the tabs | ⬜ |
 | 19 | Nothing extra below the strip | No blank band between the bottom of the tab strip and the page content. The block is painted opaque, so if GitHub's page-header block ever extends below its tab strip, that overhang would show up here | ⬜ |
 | 20 | Links in the state row work | Click the branch name and the author link while the strip is pinned | ⬜ |
-| 21 | `includeStateRow: false` | Set it, regenerate, reload: back to the tab strip alone, roughly 32px shorter, and the fail-safe still passes | ⬜ |
+| 21 | Three decks, no overlap | Repo nav, GitHub's bar, tab strip — stacked, none covering another, nothing clipped | ⬜ |
+| 22 | Title is readable | The PR title in GitHub's bar is legible and not cut off | ⬜ |
+| 23 | The strip settles when GitHub's bar arrives | Scroll down slowly. The tab strip moves down once as GitHub's bar appears — expected, since that is when the space above it exists. Judge whether it reads as a glitch | ⬜ |
+| 24 | No gap above the tab strip | While GitHub's bar is hidden or sliding, there is no empty band between the repo nav and the tab strip. A gap means a hidden bar is being counted as visible | ⬜ |
+| 25 | Buttons in GitHub's bar work | Click something in it while pinned — it must not be inert, which the old `pointer-events: none` made it | ⬜ |
+| 26 | Anchor jumps clear all three | Follow a review-comment permalink: the target lands below all three decks | ⬜ |
+| 27 | `includeStateRow: true` fallback | Turn it on: our own badge row appears above the tab strip, duplicating GitHub's bar, and the fail-safe still passes | ⬜ |
 
 ### If the state row does not appear
 

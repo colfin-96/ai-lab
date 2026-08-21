@@ -4,9 +4,13 @@ Keeps the bits you actually navigate with reachable, without scrolling back to
 the top of the page:
 
 1. the repository nav — **Code / Pull requests / Agents / Actions / Insights / Settings**
-2. the pull-request state row — the **Open / Merged / Closed** badge and the
-   "merged N commits into `main` from `branch`" line
+2. GitHub's own sticky header — the **Open / Merged / Closed** badge, the PR
+   title, and the "merged N commits into `main` from `branch`" line
 3. the pull-request tabs — **Conversation / Commits / Checks / Files changed**
+
+Deck 2 is GitHub's, not ours. Stock GitHub already shows it once you scroll; we
+push it down to sit under the repo nav and stack the tab strip below it, rather
+than fading it out and rebuilding the same information.
 
 They slide out of the way while you scroll **down**, and come straight back when you:
 
@@ -14,17 +18,12 @@ They slide out of the way while you scroll **down**, and come straight back when
 * move the mouse pointer to the very top edge of the window, or
 * tab into it with the keyboard.
 
-While your strips are showing, GitHub's own sticky PR title bar fades out, so you
-never end up with three stacked decks — scroll down and it's back, exactly as
-stock. On pages with no tab strip (the diff view, code browsing) GitHub's bar is
-simply pushed down to clear the repo nav instead.
+While your strips are hidden, GitHub's bar drops back to the top of the window
+and behaves exactly as stock.
 
-Screen cost: roughly **120px** while the strips are showing, **0px** while you
-scroll down. Drop the state row with `includeStateRow: false` to get back to
-about 88px.
-
-The PR title itself is not pinned: GitHub's own sticky header already shows it
-once you scroll, so duplicating it only cost height.
+Screen cost: the repo nav and tab strip are about **88px** between them, plus
+whatever GitHub's own bar takes while it is showing. **0px** while you scroll
+down.
 
 ## Two ways to install
 
@@ -106,7 +105,7 @@ version in this repo, edit `extension/sticky-nav.js` and regenerate — see
 | `threshold` | `5` | Pixels of scrolling before the bar reacts. Raise it if a twitchy trackpad flickers the bar. |
 | `revealOnPointerTop` | `true` | `false` turns off "reveal when the mouse touches the top edge". |
 | `pinSubTabs` | `true` | `false` pins only the repo nav, leaving the PR tabs alone (and GitHub's own title bar untouched). |
-| `includeStateRow` | `true` | `false` pins the tab strip without the state row above it — the Open/Merged badge and the "merged N commits into main" line — saving about 32px. |
+| `includeStateRow` | `false` | `true` pins our own copy of the state row above the tab strip. Off by default because GitHub's own bar already shows it; turn it on if that bar stops appearing. |
 | `pointerZone` | `8` | How close to the top edge (px) the pointer must get. |
 | `extraOffsetSelectors` | `[]` | CSS selectors for any *other* fixed bar that sits at `top: 0` and should be pushed down while the nav shows. |
 | `debug` | `false` | `true` logs what each attach found — nav, wrapper, tab strip, state badge, geometry — to the page console. Start here if the strip isn't picking something up. |
@@ -146,6 +145,22 @@ covering both, provided that ancestor can still travel. With
 `includeStateRow: false` the top edge is the tab strip itself. Either way the
 rows above the top edge scroll off and land *behind* the repo nav strip, which is
 opaque and sits one z-index higher, so they're never visible.
+
+### GitHub's own bar
+
+Its height is measured every frame and published as `--ghsn-ghbar-h`, which is
+what the tab strip's offset is built from. The measurement only counts a bar that
+is genuinely on screen: GitHub fades and slides this thing in and out, so a
+measurable box is no proof of visibility, and counting a hidden one would leave a
+gap above the tab strip. A bar that is transparent, `visibility: hidden`, or slid
+back up above the nav measures as zero.
+
+It also mounts long after our own setup runs, so we keep looking for it — at most
+every 400ms, since on pages where it never appears an unthrottled search would
+run several `querySelector` calls on every scroll frame.
+
+One consequence worth knowing: the tab strip moves down when GitHub's bar
+appears, because that is when the space above it comes into being.
 
 ### When it gets it wrong
 

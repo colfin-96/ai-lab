@@ -7,8 +7,9 @@
  *      and the "merged N commits into main from ..." line
  * Both auto-hide while you scroll down and slide back in when you scroll up.
  *
- * While they are showing, GitHub's own sticky PR title bar fades out, so you
- * never get three stacked decks. Scroll down and it comes straight back.
+ * GitHub's own sticky PR header is kept — pushed down to sit between the two —
+ * because it already shows the state badge, the title and the branch line.
+ * sticky-nav.js measures its height so the tab strip stacks below it.
  *
  * All geometry comes from CSS custom properties that sticky-nav.js measures at
  * runtime, so this keeps working when GitHub changes header heights, when the
@@ -21,6 +22,7 @@
   --ghsn-tabs-h: 0px;      /* visible height of the PR strip (0 = none here)  */
   --ghsn-tabs-top: 0px;    /* PR block: navH - strip offset (negative)        */
   --ghsn-tabs-shift: 0px;  /* how far to lift the PR block when hiding        */
+  --ghsn-ghbar-h: 0px;     /* GitHub's own sticky bar, 0 when not showing     */
   --ghsn-dur: 160ms;       /* slide / fade duration                           */
 }
 
@@ -99,40 +101,33 @@ html.ghsn-active.ghsn-pinned .ghsn-offset {
   transition: top var(--ghsn-dur) ease, opacity var(--ghsn-dur) ease;
 }
 
-/* No tab strip on this page (diff view, code view, ...): push GitHub's bar
- * down so it clears the repo nav, exactly as before. */
+/* GitHub's bar is the deck between ours: it carries the state badge, the title
+ * and the branch line, which is exactly what we would otherwise have to rebuild.
+ * So we let it through and push it below the repo nav, and sticky-nav.js stacks
+ * the tab strip below it in turn (--ghsn-ghbar-h).
+ *
+ * While our strips are hidden it goes back to top: 0 and behaves as stock. */
 
-html.ghsn-active.ghsn-pinned:not(.ghsn-tabs) [class*="use-sticky-header-module__stickyHeader"],
-html.ghsn-active.ghsn-pinned:not(.ghsn-tabs) [class*="StickyPullRequestHeader-module"],
-html.ghsn-active.ghsn-pinned:not(.ghsn-tabs) [class*="StickyIssueHeader-module"],
-html.ghsn-active.ghsn-pinned:not(.ghsn-tabs) .gh-header-sticky,
-html.ghsn-active.ghsn-pinned:not(.ghsn-tabs) .ghsn-offset {
+html.ghsn-active.ghsn-pinned [class*="use-sticky-header-module__stickyHeader"],
+html.ghsn-active.ghsn-pinned [class*="StickyPullRequestHeader-module"],
+html.ghsn-active.ghsn-pinned [class*="StickyIssueHeader-module"],
+html.ghsn-active.ghsn-pinned .gh-header-sticky,
+html.ghsn-active.ghsn-pinned .ghsn-offset {
   top: var(--ghsn-nav-h) !important;
 }
 
-html.ghsn-active.ghsn-pinned.ghsn-hidden:not(.ghsn-tabs) [class*="use-sticky-header-module__stickyHeader"],
-html.ghsn-active.ghsn-pinned.ghsn-hidden:not(.ghsn-tabs) [class*="StickyPullRequestHeader-module"],
-html.ghsn-active.ghsn-pinned.ghsn-hidden:not(.ghsn-tabs) [class*="StickyIssueHeader-module"],
-html.ghsn-active.ghsn-pinned.ghsn-hidden:not(.ghsn-tabs) .gh-header-sticky,
-html.ghsn-active.ghsn-pinned.ghsn-hidden:not(.ghsn-tabs) .ghsn-offset {
+html.ghsn-active.ghsn-pinned.ghsn-hidden [class*="use-sticky-header-module__stickyHeader"],
+html.ghsn-active.ghsn-pinned.ghsn-hidden [class*="StickyPullRequestHeader-module"],
+html.ghsn-active.ghsn-pinned.ghsn-hidden [class*="StickyIssueHeader-module"],
+html.ghsn-active.ghsn-pinned.ghsn-hidden .gh-header-sticky,
+html.ghsn-active.ghsn-pinned.ghsn-hidden .ghsn-offset {
   top: 0 !important;
-}
-
-/* Tab strip present: swap. Our two strips showing -> GitHub's bar steps
- * aside. Our strips hidden -> GitHub's bar behaves exactly as stock. */
-
-html.ghsn-active.ghsn-pinned.ghsn-tabs:not(.ghsn-hidden) [class*="use-sticky-header-module__stickyHeader"],
-html.ghsn-active.ghsn-pinned.ghsn-tabs:not(.ghsn-hidden) [class*="StickyPullRequestHeader-module"],
-html.ghsn-active.ghsn-pinned.ghsn-tabs:not(.ghsn-hidden) [class*="StickyIssueHeader-module"],
-html.ghsn-active.ghsn-pinned.ghsn-tabs:not(.ghsn-hidden) .gh-header-sticky {
-  opacity: 0;
-  pointer-events: none;
 }
 
 /* ---- anchor jumps shouldn't land underneath the pinned strips ------- */
 
 html.ghsn-active {
-  scroll-padding-top: calc(var(--ghsn-nav-h) + var(--ghsn-tabs-h) + 8px);
+  scroll-padding-top: calc(var(--ghsn-nav-h) + var(--ghsn-ghbar-h) + var(--ghsn-tabs-h) + 8px);
 }
 
 /* ---- accessibility -------------------------------------------------- */

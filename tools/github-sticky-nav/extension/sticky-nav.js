@@ -3,13 +3,13 @@
  * Pins two strips to the top of the window:
  *   1. the repository nav  (Code / Pull requests / Agents / Actions / ...)
  *   2. the pull-request tab strip (Conversation / Commits / Checks / Files
- *      changed), with the state row above it — the Open/Merged badge and the
- *      "merged N commits into main from ..." line — unless that is turned off
+ *      changed), stacked below GitHub's own sticky header
  *
  * They slide out of the way when you scroll down and come straight back when
  * you scroll up, touch the top edge of the window with the mouse, or tab into
- * them. While they are showing, GitHub's own sticky PR title bar fades out, so
- * there are never three stacked decks.
+ * them. GitHub's own sticky PR header is kept rather than faded out, pushed down
+ * to sit between the two: it already shows the state badge, the title and the
+ * branch line, so rebuilding that ourselves would only duplicate it.
  *
  * If the strips do not land where the geometry predicted — because GitHub has
  * restructured its header and we pinned the wrong block — the script strips its
@@ -31,10 +31,12 @@
     pointerZone: 8,
     // Also pin the PR tab strip. Set false for the repo nav alone.
     pinSubTabs: true,
-    // Keep the state row — the Open/Merged/Closed badge and the "merged N
-    // commits into main from ..." line — visible above the tab strip. Costs the
-    // height of that one row. Set false to show the tab strip alone.
-    includeStateRow: true,
+    // Keep our own copy of the state row — the Open/Merged/Closed badge and the
+    // "merged N commits into main from ..." line — above the tab strip. Off by
+    // default because GitHub's own sticky header already shows that, plus the
+    // title, and we now let it through instead of fading it out. Turn this on if
+    // GitHub's bar ever stops appearing.
+    includeStateRow: false,
     // Extra selectors for other fixed bars that sit at top: 0 and should be
     // pushed down while the nav shows. Matching elements get .ghsn-offset.
     extraOffsetSelectors: [],
@@ -58,6 +60,16 @@
   // The Open / Merged / Closed / Draft badge. Used only as a position marker:
   // wherever it sits, the strip starts just above it, which keeps its whole row
   // — "<user> merged N commits into main from <branch>" — on screen.
+  // GitHub's own sticky header: the compact bar carrying the state badge, the
+  // title and the branch line. We push it below our nav and stack our tab strip
+  // underneath it, so its height is part of our geometry.
+  const GH_BAR_SELECTORS = [
+    '[class*="use-sticky-header-module__stickyHeader"]',
+    '[class*="StickyPullRequestHeader-module"]',
+    '[class*="StickyIssueHeader-module"]',
+    '.gh-header-sticky',
+  ];
+
   const STATE_SELECTORS = [
     '[class*="StateLabel"]',
     '[class*="stateLabel"]',
@@ -72,11 +84,13 @@
   let tabs = null;      // the PR tab strip <nav>
   let block = null;     // block we pin so the tab strip stays put
   let stateBadge = null; // Open/Merged badge, when we are keeping its row visible
+  let ghBar = null;      // GitHub's own sticky header, once it turns up
+  let ghBarSeen = 0;     // when we last looked for it
 
   // stripH is the height of everything we keep visible from the PR block, and
   // offset is where that strip starts inside the block — the point that should
   // land at navH once pinned, which is also what the fail-safe checks.
-  const geo = { navH: 0, wrapH: 0, stripH: 0, offset: 0, tabsTop: 0, tabsShift: 0 };
+  const geo = { navH: 0, wrapH: 0, stripH: 0, offset: 0, ghBarH: 0, tabsTop: 0, tabsShift: 0 };
 
   let lastY = 0;
   let hidden = false;
@@ -194,6 +208,44 @@
     return bottomOf(parent) - bottomOf(el) > Math.max(200, window.innerHeight * 0.5);
   };
 
+  /* ---------------- GitHub's own sticky header ---------------- */
+
+  // It mounts when GitHub decides to show it, which is well after our attach, so
+  // we look again as we go — throttled, because when the bar never appears this
+  // would otherwise run a handful of querySelectors on every scroll frame.
+  const GH_BAR_RETRY = 400;
+
+  const resolveGhBar = () => {
+    if (ghBar && ghBar.isConnected) return;
+    const now = performance.now();
+    if (now - ghBarSeen < GH_BAR_RETRY) return;
+    ghBarSeen = now;
+    for (const sel of GH_BAR_SELECTORS) {
+      const el = document.querySelector(sel);
+      if (el) { ghBar = el; return; }
+    }
+    ghBar = null;
+  };
+
+  // Height only when it is actually on screen. GitHub fades and slides this bar
+  // in and out, so a measurable box is not proof that anything is visible — and
+  // counting a hidden bar would leave a gap above our tab strip.
+  const measureGhBar = () => {
+    resolveGhBar();
+    if (!ghBar || !ghBar.isConnected) return 0;
+
+    const r = ghBar.getBoundingClientRect();
+    if (r.height < 8) return 0;
+    // We pin it at navH, so a bar that has been slid away sits at or above that.
+    if (r.bottom <= geo.navH + 1) return 0;
+
+    const cs = getComputedStyle(ghBar);
+    if (cs.visibility === 'hidden' || cs.display === 'none') return 0;
+    if (parseFloat(cs.opacity) < 0.1) return 0;
+
+    return Math.round(r.height);
+  };
+
   /* ---------------- geometry ---------------- */
 
   const setVar = (name, px) => root.style.setProperty(name, px + 'px');
@@ -213,6 +265,12 @@
       geo.wrapH = wrapH;
       setVar('--ghsn-nav-h', navH);
       setVar('--ghsn-pin-top', navH - wrapH);
+    }
+
+    const ghBarH = measureGhBar();
+    if (ghBarH !== geo.ghBarH) {
+      geo.ghBarH = ghBarH;
+      setVar('--ghsn-ghbar-h', ghBarH);
     }
 
     // Strip 2 is optional: plenty of pages don't have one.
@@ -242,11 +300,13 @@
     const blockH = Math.round(br.height);
     if (stripH <= 0 || !blockH) return true;
 
-    const tabsTop = navH - offset;                // lands the strip below strip 1
+    // Lands the strip below strip 1 and below GitHub's own bar, which sits
+    // between the two and carries the badge, title and branch line.
+    const tabsTop = navH + ghBarH - offset;
     // Lift far enough to clear whichever reaches lower — the strip itself (it
     // can overflow its block's measured height) or the block's bottom edge —
     // plus a few px so the drop shadow doesn't smudge the top of the window.
-    const tabsShift = navH + Math.max(stripH, blockH - offset) + 4;
+    const tabsShift = navH + ghBarH + Math.max(stripH, blockH - offset) + 4;
 
     geo.offset = offset;
     if (stripH !== geo.stripH || tabsTop !== geo.tabsTop || tabsShift !== geo.tabsShift) {
@@ -297,10 +357,12 @@
     }
 
     if (geo.stripH && tabs && tabs.isConnected) {
-      // Whatever we made the top of the strip is what should land at navH.
+      // Whatever we made the top of the strip is what should land just under the
+      // nav and GitHub's own bar.
       const stripTop = Math.round(block.getBoundingClientRect().top + geo.offset);
-      if (Math.abs(stripTop - geo.navH) > PIN_TOLERANCE) {
-        log('strip top landed at', stripTop, 'expected', geo.navH);
+      const expected = geo.navH + geo.ghBarH;
+      if (Math.abs(stripTop - expected) > PIN_TOLERANCE) {
+        log('strip top landed at', stripTop, 'expected', expected);
         return false;
       }
     }
@@ -312,7 +374,7 @@
     clearMarks();
     clearExtraOffsets();
     ro?.disconnect();
-    nav = wrapper = tabs = block = stateBadge = null;
+    nav = wrapper = tabs = block = stateBadge = ghBar = null;
     hidden = false;
   };
 

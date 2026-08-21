@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GitHub Sticky Repo Nav
 // @namespace    https://github.com/colfin-96/ai-lab
-// @version      1.4.1
+// @version      1.5.0
 // @description  Keeps GitHub's repo nav and the PR tab strip (Conversation / Commits / Checks / Files changed) reachable: they hide as you scroll down and slide back in the moment you scroll up.
 // @author       colfin-96
 // @match        https://github.com/*
@@ -49,8 +49,9 @@
  *      and the "merged N commits into main from ..." line
  * Both auto-hide while you scroll down and slide back in when you scroll up.
  *
- * While they are showing, GitHub's own sticky PR title bar fades out, so you
- * never get three stacked decks. Scroll down and it comes straight back.
+ * GitHub's own sticky PR header is kept — pushed down to sit between the two —
+ * because it already shows the state badge, the title and the branch line.
+ * sticky-nav.js measures its height so the tab strip stacks below it.
  *
  * All geometry comes from CSS custom properties that sticky-nav.js measures at
  * runtime, so this keeps working when GitHub changes header heights, when the
@@ -63,6 +64,7 @@
   --ghsn-tabs-h: 0px;      /* visible height of the PR strip (0 = none here)  */
   --ghsn-tabs-top: 0px;    /* PR block: navH - strip offset (negative)        */
   --ghsn-tabs-shift: 0px;  /* how far to lift the PR block when hiding        */
+  --ghsn-ghbar-h: 0px;     /* GitHub's own sticky bar, 0 when not showing     */
   --ghsn-dur: 160ms;       /* slide / fade duration                           */
 }
 
@@ -141,40 +143,33 @@ html.ghsn-active.ghsn-pinned .ghsn-offset {
   transition: top var(--ghsn-dur) ease, opacity var(--ghsn-dur) ease;
 }
 
-/* No tab strip on this page (diff view, code view, ...): push GitHub's bar
- * down so it clears the repo nav, exactly as before. */
+/* GitHub's bar is the deck between ours: it carries the state badge, the title
+ * and the branch line, which is exactly what we would otherwise have to rebuild.
+ * So we let it through and push it below the repo nav, and sticky-nav.js stacks
+ * the tab strip below it in turn (--ghsn-ghbar-h).
+ *
+ * While our strips are hidden it goes back to top: 0 and behaves as stock. */
 
-html.ghsn-active.ghsn-pinned:not(.ghsn-tabs) [class*="use-sticky-header-module__stickyHeader"],
-html.ghsn-active.ghsn-pinned:not(.ghsn-tabs) [class*="StickyPullRequestHeader-module"],
-html.ghsn-active.ghsn-pinned:not(.ghsn-tabs) [class*="StickyIssueHeader-module"],
-html.ghsn-active.ghsn-pinned:not(.ghsn-tabs) .gh-header-sticky,
-html.ghsn-active.ghsn-pinned:not(.ghsn-tabs) .ghsn-offset {
+html.ghsn-active.ghsn-pinned [class*="use-sticky-header-module__stickyHeader"],
+html.ghsn-active.ghsn-pinned [class*="StickyPullRequestHeader-module"],
+html.ghsn-active.ghsn-pinned [class*="StickyIssueHeader-module"],
+html.ghsn-active.ghsn-pinned .gh-header-sticky,
+html.ghsn-active.ghsn-pinned .ghsn-offset {
   top: var(--ghsn-nav-h) !important;
 }
 
-html.ghsn-active.ghsn-pinned.ghsn-hidden:not(.ghsn-tabs) [class*="use-sticky-header-module__stickyHeader"],
-html.ghsn-active.ghsn-pinned.ghsn-hidden:not(.ghsn-tabs) [class*="StickyPullRequestHeader-module"],
-html.ghsn-active.ghsn-pinned.ghsn-hidden:not(.ghsn-tabs) [class*="StickyIssueHeader-module"],
-html.ghsn-active.ghsn-pinned.ghsn-hidden:not(.ghsn-tabs) .gh-header-sticky,
-html.ghsn-active.ghsn-pinned.ghsn-hidden:not(.ghsn-tabs) .ghsn-offset {
+html.ghsn-active.ghsn-pinned.ghsn-hidden [class*="use-sticky-header-module__stickyHeader"],
+html.ghsn-active.ghsn-pinned.ghsn-hidden [class*="StickyPullRequestHeader-module"],
+html.ghsn-active.ghsn-pinned.ghsn-hidden [class*="StickyIssueHeader-module"],
+html.ghsn-active.ghsn-pinned.ghsn-hidden .gh-header-sticky,
+html.ghsn-active.ghsn-pinned.ghsn-hidden .ghsn-offset {
   top: 0 !important;
-}
-
-/* Tab strip present: swap. Our two strips showing -> GitHub's bar steps
- * aside. Our strips hidden -> GitHub's bar behaves exactly as stock. */
-
-html.ghsn-active.ghsn-pinned.ghsn-tabs:not(.ghsn-hidden) [class*="use-sticky-header-module__stickyHeader"],
-html.ghsn-active.ghsn-pinned.ghsn-tabs:not(.ghsn-hidden) [class*="StickyPullRequestHeader-module"],
-html.ghsn-active.ghsn-pinned.ghsn-tabs:not(.ghsn-hidden) [class*="StickyIssueHeader-module"],
-html.ghsn-active.ghsn-pinned.ghsn-tabs:not(.ghsn-hidden) .gh-header-sticky {
-  opacity: 0;
-  pointer-events: none;
 }
 
 /* ---- anchor jumps shouldn't land underneath the pinned strips ------- */
 
 html.ghsn-active {
-  scroll-padding-top: calc(var(--ghsn-nav-h) + var(--ghsn-tabs-h) + 8px);
+  scroll-padding-top: calc(var(--ghsn-nav-h) + var(--ghsn-ghbar-h) + var(--ghsn-tabs-h) + 8px);
 }
 
 /* ---- accessibility -------------------------------------------------- */
@@ -209,13 +204,13 @@ html.ghsn-active {
  * Pins two strips to the top of the window:
  *   1. the repository nav  (Code / Pull requests / Agents / Actions / ...)
  *   2. the pull-request tab strip (Conversation / Commits / Checks / Files
- *      changed), with the state row above it — the Open/Merged badge and the
- *      "merged N commits into main from ..." line — unless that is turned off
+ *      changed), stacked below GitHub's own sticky header
  *
  * They slide out of the way when you scroll down and come straight back when
  * you scroll up, touch the top edge of the window with the mouse, or tab into
- * them. While they are showing, GitHub's own sticky PR title bar fades out, so
- * there are never three stacked decks.
+ * them. GitHub's own sticky PR header is kept rather than faded out, pushed down
+ * to sit between the two: it already shows the state badge, the title and the
+ * branch line, so rebuilding that ourselves would only duplicate it.
  *
  * If the strips do not land where the geometry predicted — because GitHub has
  * restructured its header and we pinned the wrong block — the script strips its
@@ -237,10 +232,12 @@ html.ghsn-active {
     pointerZone: 8,
     // Also pin the PR tab strip. Set false for the repo nav alone.
     pinSubTabs: true,
-    // Keep the state row — the Open/Merged/Closed badge and the "merged N
-    // commits into main from ..." line — visible above the tab strip. Costs the
-    // height of that one row. Set false to show the tab strip alone.
-    includeStateRow: true,
+    // Keep our own copy of the state row — the Open/Merged/Closed badge and the
+    // "merged N commits into main from ..." line — above the tab strip. Off by
+    // default because GitHub's own sticky header already shows that, plus the
+    // title, and we now let it through instead of fading it out. Turn this on if
+    // GitHub's bar ever stops appearing.
+    includeStateRow: false,
     // Extra selectors for other fixed bars that sit at top: 0 and should be
     // pushed down while the nav shows. Matching elements get .ghsn-offset.
     extraOffsetSelectors: [],
@@ -264,6 +261,16 @@ html.ghsn-active {
   // The Open / Merged / Closed / Draft badge. Used only as a position marker:
   // wherever it sits, the strip starts just above it, which keeps its whole row
   // — "<user> merged N commits into main from <branch>" — on screen.
+  // GitHub's own sticky header: the compact bar carrying the state badge, the
+  // title and the branch line. We push it below our nav and stack our tab strip
+  // underneath it, so its height is part of our geometry.
+  const GH_BAR_SELECTORS = [
+    '[class*="use-sticky-header-module__stickyHeader"]',
+    '[class*="StickyPullRequestHeader-module"]',
+    '[class*="StickyIssueHeader-module"]',
+    '.gh-header-sticky',
+  ];
+
   const STATE_SELECTORS = [
     '[class*="StateLabel"]',
     '[class*="stateLabel"]',
@@ -278,11 +285,13 @@ html.ghsn-active {
   let tabs = null;      // the PR tab strip <nav>
   let block = null;     // block we pin so the tab strip stays put
   let stateBadge = null; // Open/Merged badge, when we are keeping its row visible
+  let ghBar = null;      // GitHub's own sticky header, once it turns up
+  let ghBarSeen = 0;     // when we last looked for it
 
   // stripH is the height of everything we keep visible from the PR block, and
   // offset is where that strip starts inside the block — the point that should
   // land at navH once pinned, which is also what the fail-safe checks.
-  const geo = { navH: 0, wrapH: 0, stripH: 0, offset: 0, tabsTop: 0, tabsShift: 0 };
+  const geo = { navH: 0, wrapH: 0, stripH: 0, offset: 0, ghBarH: 0, tabsTop: 0, tabsShift: 0 };
 
   let lastY = 0;
   let hidden = false;
@@ -400,6 +409,44 @@ html.ghsn-active {
     return bottomOf(parent) - bottomOf(el) > Math.max(200, window.innerHeight * 0.5);
   };
 
+  /* ---------------- GitHub's own sticky header ---------------- */
+
+  // It mounts when GitHub decides to show it, which is well after our attach, so
+  // we look again as we go — throttled, because when the bar never appears this
+  // would otherwise run a handful of querySelectors on every scroll frame.
+  const GH_BAR_RETRY = 400;
+
+  const resolveGhBar = () => {
+    if (ghBar && ghBar.isConnected) return;
+    const now = performance.now();
+    if (now - ghBarSeen < GH_BAR_RETRY) return;
+    ghBarSeen = now;
+    for (const sel of GH_BAR_SELECTORS) {
+      const el = document.querySelector(sel);
+      if (el) { ghBar = el; return; }
+    }
+    ghBar = null;
+  };
+
+  // Height only when it is actually on screen. GitHub fades and slides this bar
+  // in and out, so a measurable box is not proof that anything is visible — and
+  // counting a hidden bar would leave a gap above our tab strip.
+  const measureGhBar = () => {
+    resolveGhBar();
+    if (!ghBar || !ghBar.isConnected) return 0;
+
+    const r = ghBar.getBoundingClientRect();
+    if (r.height < 8) return 0;
+    // We pin it at navH, so a bar that has been slid away sits at or above that.
+    if (r.bottom <= geo.navH + 1) return 0;
+
+    const cs = getComputedStyle(ghBar);
+    if (cs.visibility === 'hidden' || cs.display === 'none') return 0;
+    if (parseFloat(cs.opacity) < 0.1) return 0;
+
+    return Math.round(r.height);
+  };
+
   /* ---------------- geometry ---------------- */
 
   const setVar = (name, px) => root.style.setProperty(name, px + 'px');
@@ -419,6 +466,12 @@ html.ghsn-active {
       geo.wrapH = wrapH;
       setVar('--ghsn-nav-h', navH);
       setVar('--ghsn-pin-top', navH - wrapH);
+    }
+
+    const ghBarH = measureGhBar();
+    if (ghBarH !== geo.ghBarH) {
+      geo.ghBarH = ghBarH;
+      setVar('--ghsn-ghbar-h', ghBarH);
     }
 
     // Strip 2 is optional: plenty of pages don't have one.
@@ -448,11 +501,13 @@ html.ghsn-active {
     const blockH = Math.round(br.height);
     if (stripH <= 0 || !blockH) return true;
 
-    const tabsTop = navH - offset;                // lands the strip below strip 1
+    // Lands the strip below strip 1 and below GitHub's own bar, which sits
+    // between the two and carries the badge, title and branch line.
+    const tabsTop = navH + ghBarH - offset;
     // Lift far enough to clear whichever reaches lower — the strip itself (it
     // can overflow its block's measured height) or the block's bottom edge —
     // plus a few px so the drop shadow doesn't smudge the top of the window.
-    const tabsShift = navH + Math.max(stripH, blockH - offset) + 4;
+    const tabsShift = navH + ghBarH + Math.max(stripH, blockH - offset) + 4;
 
     geo.offset = offset;
     if (stripH !== geo.stripH || tabsTop !== geo.tabsTop || tabsShift !== geo.tabsShift) {
@@ -503,10 +558,12 @@ html.ghsn-active {
     }
 
     if (geo.stripH && tabs && tabs.isConnected) {
-      // Whatever we made the top of the strip is what should land at navH.
+      // Whatever we made the top of the strip is what should land just under the
+      // nav and GitHub's own bar.
       const stripTop = Math.round(block.getBoundingClientRect().top + geo.offset);
-      if (Math.abs(stripTop - geo.navH) > PIN_TOLERANCE) {
-        log('strip top landed at', stripTop, 'expected', geo.navH);
+      const expected = geo.navH + geo.ghBarH;
+      if (Math.abs(stripTop - expected) > PIN_TOLERANCE) {
+        log('strip top landed at', stripTop, 'expected', expected);
         return false;
       }
     }
@@ -518,7 +575,7 @@ html.ghsn-active {
     clearMarks();
     clearExtraOffsets();
     ro?.disconnect();
-    nav = wrapper = tabs = block = stateBadge = null;
+    nav = wrapper = tabs = block = stateBadge = ghBar = null;
     hidden = false;
   };
 
