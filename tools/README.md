@@ -9,4 +9,4 @@ install it.
 
 | Tool | What it does |
 | --- | --- |
-| [`github-sticky-nav/`](github-sticky-nav/) | Keeps GitHub's repo nav and PR tab strip reachable while you scroll. Ships as both a Chromium extension and a Tampermonkey userscript. |
+| [`github-sticky-nav/`](github-sticky-nav/) | Keeps GitHub's repo nav and PR tab strip reachable while you scroll. Chromium extension for Chrome/Edge/Brave, userscript for Firefox and anything with Tampermonkey. |

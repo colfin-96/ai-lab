@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GitHub Sticky Repo Nav
 // @namespace    https://github.com/colfin-96/ai-lab
-// @version      1.1.0
+// @version      1.2.0
 // @description  Keeps GitHub's repo nav and the PR tab strip (Conversation / Commits / Checks / Files changed) reachable: they hide as you scroll down and slide back in the moment you scroll up.
 // @author       colfin-96
 // @match        https://github.com/*
@@ -202,6 +202,11 @@ html.ghsn-active {
  * them. While they are showing, GitHub's own sticky PR title bar fades out, so
  * there are never three stacked decks.
  *
+ * If the strips do not land where the geometry predicted — because GitHub has
+ * restructured its header and we pinned the wrong block — the script strips its
+ * own classes and stands down, leaving stock GitHub rather than a nav wedged at
+ * the wrong offset.
+ *
  * No permissions, no network, no storage. Tweak CONFIG below to taste.
  */
 (() => {
@@ -247,6 +252,30 @@ html.ghsn-active {
   let hidden = false;
   let ticking = false;
 
+  // Fail-safe state. 'armed' means we have pinned but not yet confirmed the
+  // strips landed where we predicted; 'ok' means they did; 'failed' means they
+  // did not and we have stood down for this page view. Re-armed when the nav
+  // element changes, on a navigation, and on a resize — but deliberately not on
+  // every attach, since mutation-driven attaches fire constantly.
+  let verdict = 'armed';
+
+  // A failed verdict has to outlast the stand-down that follows it. Standing
+  // down nulls our element refs, which is precisely what the MutationObserver
+  // watches for, so without this the observer would re-attach, fail, and stand
+  // down again in a loop. Only a real navigation (or a resize) clears it.
+  let stoodDown = false;
+
+  // How far the pinned strips may sit from their predicted position before we
+  // call the pin broken. Generous enough to absorb sub-pixel rounding and
+  // GitHub's own 1px borders, tight enough that a wrong container is obvious.
+  const PIN_TOLERANCE = 6;
+
+  // When the strips last started sliding. Measuring mid-slide would read the
+  // transform's interpolated position and condemn a pin that is fine, so the
+  // check waits for the transition to finish.
+  let lastSlide = 0;
+  const SLIDE_SETTLE = 250;
+
   /* ---------------- element discovery ---------------- */
 
   const findFirst = (selectors) => {
@@ -257,19 +286,41 @@ html.ghsn-active {
     return null;
   };
 
-  // `position: sticky` can only travel inside its own parent's box, so we pin
-  // the outermost header block that sits directly inside the tall page column
-  // rather than the <nav> itself — otherwise it would stay put for the first
-  // ~130px of scrolling and no further.
+  // How far a parent must extend below a candidate before we call it room to
+  // travel. Small, because we only need to tell "hugs the header" apart from
+  // "is the page column"; how *much* room is enough is a separate question,
+  // answered by hasTravelRoom below.
+  const ROOM_SLACK = 8;
+  const MAX_CLIMB = 10;
+
+  const bottomOf = (el) => el.getBoundingClientRect().bottom;
+
+  // `position: sticky` can only travel inside its own parent's box. A parent
+  // whose bottom edge is level with the candidate's gives it nowhere to go, so
+  // pinning there would hold for a few hundred pixels of scrolling and no
+  // further. Climb past every such parent and stop at the first one that
+  // actually extends below us — that is the block we can pin.
+  //
+  // This is deliberately a statement about what sticky positioning needs rather
+  // than a guess about how tall GitHub's containers happen to be, so it should
+  // survive a redesign that changes those heights. If it stops being true, the
+  // post-pin check in verifyPin catches it and we stand down.
   const climbToPageBlock = (el) => {
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < MAX_CLIMB; i++) {
       const parent = el.parentElement;
-      if (!parent || parent === document.body) return el;
-      // Stop as soon as the parent is clearly the long, scrolling page column.
-      if (parent.clientHeight > el.clientHeight * 2 + 200) return el;
+      if (!parent || parent === document.body || parent === document.documentElement) return el;
+      if (bottomOf(parent) - bottomOf(el) > ROOM_SLACK) return el;
       el = parent;
     }
     return el;
+  };
+
+  // Enough slack below the block for pinning to be worth anything at all. A
+  // block whose parent runs out a few pixels down would unpin almost at once.
+  const hasTravelRoom = (el) => {
+    const parent = el.parentElement;
+    if (!parent) return false;
+    return bottomOf(parent) - bottomOf(el) > Math.max(200, window.innerHeight * 0.5);
   };
 
   /* ---------------- geometry ---------------- */
@@ -332,27 +383,74 @@ html.ghsn-active {
 
   const contains = (el, node) => !!el && el.contains(node);
 
+  // An open dropdown counts as an interaction wherever it is: menus live in the
+  // PR tab strip as well as the repo nav.
+  const hasOpenMenu = (el) => !!el && !!el.querySelector('[aria-expanded="true"]');
+
   const busy = () =>
     // Don't yank the strips away mid-interaction.
     contains(wrapper, document.activeElement) ||
     contains(block, document.activeElement) ||
-    !!wrapper.querySelector('[aria-expanded="true"]');
+    hasOpenMenu(wrapper) ||
+    hasOpenMenu(block);
 
   const setHidden = (next) => {
     if (next === hidden) return;
     hidden = next;
+    lastSlide = performance.now();
     root.classList.toggle('ghsn-hidden', hidden);
+  };
+
+  // Confirm the strips actually landed where the geometry said they would. If
+  // GitHub restructures its header and we end up pinning the wrong block, this
+  // is what turns a nav wedged at the wrong offset back into stock GitHub.
+  //
+  // Only meaningful once we are clearly past the pin point and nothing is
+  // mid-slide, hence the callers' guards.
+  const verifyPin = () => {
+    if (Math.abs(Math.round(nav.getBoundingClientRect().top)) > PIN_TOLERANCE) return false;
+
+    if (geo.tabsH && tabs && tabs.isConnected) {
+      const tabsTop = Math.round(tabs.getBoundingClientRect().top);
+      if (Math.abs(tabsTop - geo.navH) > PIN_TOLERANCE) return false;
+    }
+    return true;
+  };
+
+  const standDown = () => {
+    root.classList.remove('ghsn-active', 'ghsn-pinned', 'ghsn-hidden', 'ghsn-tabs');
+    clearMarks();
+    clearExtraOffsets();
+    ro?.disconnect();
+    nav = wrapper = tabs = block = null;
+    hidden = false;
   };
 
   const update = () => {
     ticking = false;
+    if (verdict === 'failed') return;
     if (!nav || !nav.isConnected) return;
     measure();
 
     const y = Math.max(0, window.scrollY);
     // Pinned == the header has scrolled far enough that only the strips are left.
-    const pinned = y > Math.max(0, geo.wrapH - geo.navH) + 1;
+    const pinLine = Math.max(0, geo.wrapH - geo.navH);
+    const pinned = y > pinLine + 1;
     root.classList.toggle('ghsn-pinned', pinned);
+
+    // Check once, well clear of the pin line so a boundary reading can't
+    // condemn a pin that is actually fine, and never while a slide is settling.
+    if (verdict === 'armed' && pinned && !hidden && y > pinLine + 24 &&
+        performance.now() - lastSlide > SLIDE_SETTLE) {
+      if (verifyPin()) {
+        verdict = 'ok';
+      } else {
+        verdict = 'failed';
+        stoodDown = true;
+        standDown();
+        return;
+      }
+    }
 
     if (!pinned || CONFIG.alwaysVisible) {
       setHidden(false);
@@ -380,6 +478,13 @@ html.ghsn-active {
     for (const sel of CONFIG.extraOffsetSelectors) {
       document.querySelectorAll(sel).forEach((el) => el.classList.add('ghsn-offset'));
     }
+  };
+
+  // Soft navigations reuse elements, so tags from the previous page have to go
+  // before we re-tag — otherwise a bar that no longer matches keeps being
+  // pushed down.
+  const clearExtraOffsets = () => {
+    document.querySelectorAll('.ghsn-offset').forEach((el) => el.classList.remove('ghsn-offset'));
   };
 
   const clearMarks = () => {
@@ -417,9 +522,7 @@ html.ghsn-active {
     const found = findFirst(NAV_SELECTORS);
     if (!found) {
       // Not a repository page (or GitHub changed the markup) — stand down.
-      root.classList.remove('ghsn-active', 'ghsn-pinned', 'ghsn-hidden', 'ghsn-tabs');
-      clearMarks();
-      nav = wrapper = tabs = block = null;
+      standDown();
       return;
     }
 
@@ -430,10 +533,18 @@ html.ghsn-active {
       return;
     }
 
+    // A different nav element means a genuinely new header, so its geometry has
+    // to earn a fresh verdict. Re-arming on every pass instead would let a
+    // mutation-driven attach re-check mid-slide and condemn a good pin.
+    verdict = 'armed';
+
     clearMarks();
     nav = found;
+    // The known wrapper class is a fast path, not an article of faith: it still
+    // has to be able to hold a sticky child, or we work it out from the DOM.
     const known = document.querySelector('.js-header-wrapper');
-    wrapper = known && known.contains(nav) ? known : climbToPageBlock(nav);
+    const anchor = known && known.contains(nav) && hasTravelRoom(known) ? known : null;
+    wrapper = anchor || climbToPageBlock(nav);
     nav.classList.add('ghsn-nav');
     wrapper.classList.add('ghsn-wrapper');
 
@@ -446,8 +557,7 @@ html.ghsn-active {
     attachTabs();
 
     if (!measure()) {
-      clearMarks();
-      nav = wrapper = tabs = block = null;
+      standDown();
       return;
     }
 
@@ -456,6 +566,7 @@ html.ghsn-active {
     hidden = false;
     root.classList.remove('ghsn-hidden');
 
+    clearExtraOffsets();
     tagExtraOffsets();
     update();
   };
@@ -472,7 +583,19 @@ html.ghsn-active {
     attach();
 
     window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', debounce(() => { measure(); update(); }, 120), { passive: true });
+
+    // A resize changes what "room to travel" means, so it is a fair reason to
+    // give a page we stood down on another go.
+    window.addEventListener('resize', debounce(() => {
+      if (stoodDown) {
+        stoodDown = false;
+        verdict = 'armed';
+        attach();
+        return;
+      }
+      measure();
+      update();
+    }, 120), { passive: true });
 
     // Keyboard users: tabbing into either strip brings them back.
     document.addEventListener('focusin', (e) => {
@@ -493,10 +616,23 @@ html.ghsn-active {
 
     // GitHub is a single-page app: headers get swapped out on navigation.
     const reattach = debounce(attach, 200);
+
+    // A navigation is a new page: it clears any stand-down from the old one and
+    // re-arms the check even when GitHub reuses the same nav element.
+    const renavigate = debounce(() => {
+      stoodDown = false;
+      verdict = 'armed';
+      attach();
+    }, 200);
+
     for (const evt of ['turbo:load', 'turbo:render', 'pjax:end', 'soft-nav:end', 'popstate']) {
-      document.addEventListener(evt, reattach);
+      document.addEventListener(evt, renavigate);
     }
+
     new MutationObserver(() => {
+      // Never re-attach off the back of a stand-down: standing down nulls our
+      // refs, which would otherwise read as "the header changed" and flap.
+      if (stoodDown) return;
       if (!nav || !nav.isConnected || nav !== findFirst(NAV_SELECTORS)) reattach();
       else if (CONFIG.pinSubTabs && (!tabs || !tabs.isConnected) && findFirst(TAB_SELECTORS)) reattach();
     }).observe(document.documentElement, { childList: true, subtree: true });

@@ -20,14 +20,24 @@ Screen cost: **88px** while the strips are showing, **0px** while you scroll dow
 
 ## Two ways to install
 
-Pick one — they do the same thing and would fight each other if both were active.
+Pick the row for your browser. Both do the same thing and would fight each other
+if you ran both at once.
 
-| | Files | Needs |
+| Browser | Install | Files |
 | --- | --- | --- |
-| Chrome extension | `extension/` | Chromium browser in developer mode |
-| Userscript | `githubstickynav.user.js` | Tampermonkey or Violentmonkey |
+| Chrome, Edge, Brave — any Chromium | extension, loaded unpacked | `extension/` |
+| Firefox | userscript | `githubstickynav.user.js` |
+| Anything with Tampermonkey | userscript | `githubstickynav.user.js` |
 
-### A) Chrome extension (Chrome, Edge, Brave — any Chromium browser)
+**Why no Firefox extension?** Firefox refuses to permanently install an extension
+that hasn't been signed by Mozilla — there is no equivalent of Chrome's
+load-unpacked. You can side-load this folder through `about:debugging` → "Load
+Temporary Add-on", but it is dropped the moment you restart the browser. Getting
+a permanent install would mean an AMO account and a signing submission per
+release, to deliver exactly what the userscript already delivers. So Firefox gets
+the userscript.
+
+### A) Chromium extension (Chrome, Edge, Brave)
 
 1. Copy the `extension/` folder somewhere permanent — e.g.
    `Documents\github-sticky-nav`. Chrome loads the extension from that folder
@@ -43,9 +53,10 @@ just dismiss it. Nothing here phones home.
 To uninstall, remove the extension from `chrome://extensions`. Nothing is left
 behind.
 
-### B) Userscript (Tampermonkey / Violentmonkey)
+### B) Userscript (Firefox, or any browser with Tampermonkey)
 
-1. Install Tampermonkey (or Violentmonkey) from your browser's extension store.
+1. Install Tampermonkey (or Violentmonkey) from your browser's add-on store —
+   both are signed add-ons, so this works normally in Firefox.
 2. Tampermonkey icon → **Dashboard** → **+** to create a new script.
    (**Utilities → File → Import** works too.)
 3. Paste the whole of `githubstickynav.user.js` in, replacing the template, then
@@ -64,6 +75,12 @@ CSS classes. No network calls, no storage, no reading of page content.
 Running a self-hosted GitHub Enterprise Server on your own domain? Add your host
 to the `matches` array in `manifest.json`, or add a `// @match` line to the
 userscript header.
+
+## Testing a change
+
+There is no test suite — the script only means anything inside a real GitHub page.
+[TESTING.md](TESTING.md) is the manual checklist: which pages to walk, what
+correct looks like on each, and how to verify the fail-safe still fires.
 
 ## Tuning
 
@@ -102,8 +119,23 @@ It has to be the block rather than the `<nav>` itself: a sticky element can only
 travel inside its own parent's box, so stickying a nav directly would pin it for
 the first ~130px of scrolling and no further.
 
+That constraint is also how the block gets found. Starting from the nav, the
+script climbs past every parent whose bottom edge is level with the candidate's —
+those hug the header and so offer nowhere to travel — and stops at the first
+parent that extends below it. `div.js-header-wrapper` is tried first as a fast
+path, but only if it passes the same test, so a renamed or restructured wrapper
+falls back to the climb rather than pinning something useless.
+
 The rows that scroll off the top of the PR block land *behind* the repo nav
 strip, which is opaque and sits one z-index higher, so they're never visible.
+
+### When it gets it wrong
+
+The first time a page scrolls far enough to pin, the script checks that the strips
+really landed where its own arithmetic predicted, within 6px. If they didn't — the
+shape a GitHub header redesign would take — it removes every class it added and
+stands down for that page view, so you get stock GitHub instead of a nav stuck at
+some wrong offset. A navigation or a window resize gives it another go.
 
 Heights and offsets are re-measured on every scroll frame (a couple of
 `getBoundingClientRect` calls, so it's cheap), which keeps things correct across
