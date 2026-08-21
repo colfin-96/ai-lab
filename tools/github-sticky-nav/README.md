@@ -4,9 +4,10 @@ Keeps the bits you actually navigate with reachable, without scrolling back to
 the top of the page:
 
 1. the repository nav — **Code / Pull requests / Agents / Actions / Insights / Settings**
-2. the pull-request state row — the **Open / Merged / Closed** badge and the
+2. the pull-request title, shrunk to a single small line
+3. the pull-request state row — the **Open / Merged / Closed** badge and the
    "merged N commits into `main` from `branch`" line
-3. the pull-request tabs — **Conversation / Commits / Checks / Files changed**
+4. the pull-request tabs — **Conversation / Commits / Checks / Files changed**
 
 They slide out of the way while you scroll **down**, and come straight back when you:
 
@@ -19,9 +20,9 @@ never end up with three stacked decks — scroll down and it's back, exactly as
 stock. On pages with no tab strip (the diff view, code browsing) GitHub's bar is
 simply pushed down to clear the repo nav instead.
 
-Screen cost: roughly **120px** while the strips are showing, **0px** while you
-scroll down. Drop the state row with `includeStateRow: false` to get back to
-about 88px.
+Screen cost: roughly **140px** while the strips are showing, **0px** while you
+scroll down. Turn off `includeTitle` and `includeStateRow` to get back to the
+88px of the tab strip alone.
 
 ## Two ways to install
 
@@ -104,6 +105,7 @@ version in this repo, edit `extension/sticky-nav.js` and regenerate — see
 | `revealOnPointerTop` | `true` | `false` turns off "reveal when the mouse touches the top edge". |
 | `pinSubTabs` | `true` | `false` pins only the repo nav, leaving the PR tabs alone (and GitHub's own title bar untouched). |
 | `includeStateRow` | `true` | `false` pins the tab strip without the state row above it — the Open/Merged badge and the "merged N commits into main" line — saving about 32px. |
+| `includeTitle` | `true` | `false` leaves the PR title out of the pinned strip. Its size while pinned is the `--ghsn-title-size` CSS variable, 13px by default. |
 | `pointerZone` | `8` | How close to the top edge (px) the pointer must get. |
 | `extraOffsetSelectors` | `[]` | CSS selectors for any *other* fixed bar that sits at `top: 0` and should be pushed down while the nav shows. |
 | `debug` | `false` | `true` logs what each attach found — nav, wrapper, tab strip, state badge, geometry — to the page console. Start here if the strip isn't picking something up. |
@@ -140,9 +142,17 @@ row", because in GitHub's header the state row and the tab strip are often
 siblings inside one shared container. If the badge turns out to sit outside the
 block that was picked for the tab strip, the block widens to the nearest ancestor
 covering both, provided that ancestor can still travel. With
-`includeStateRow: false` the top edge is the tab strip itself. Either way the rows
-above it scroll off and land *behind* the repo nav strip, which is opaque and sits
-one z-index higher, so they're never visible.
+`includeStateRow: false` the top edge is the tab strip itself. The same marker
+trick locates the title: named classes first, then the lowest visible `<h1>`
+above the tab strip. Either way the rows above the top edge scroll off and land
+*behind* the repo nav strip, which is opaque and sits one z-index higher, so
+they're never visible.
+
+The title is shrunk with `font-size` while pinned, clamped to one line with an
+ellipsis so a long title cannot wrap and cost more height than shrinking saves.
+That does change layout: the header block gets shorter as it pins, so content
+below shifts up once by the difference. `transform: scale()` would avoid the
+shift but save no space, which is the whole point.
 
 ### When it gets it wrong
 

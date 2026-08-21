@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GitHub Sticky Repo Nav
 // @namespace    https://github.com/colfin-96/ai-lab
-// @version      1.3.1
+// @version      1.4.0
 // @description  Keeps GitHub's repo nav and the PR tab strip (Conversation / Commits / Checks / Files changed) reachable: they hide as you scroll down and slide back in the moment you scroll up.
 // @author       colfin-96
 // @match        https://github.com/*
@@ -46,7 +46,8 @@
  *   1. the repository nav  (Code / Pull requests / Agents / Actions / ...)
  *   2. the pull-request tab strip (Conversation / Commits / Checks / Files
  *      changed), optionally with the state row above it — the Open/Merged badge
- *      and the "merged N commits into main from ..." line
+ *      and the "merged N commits into main from ..." line — and the PR title,
+ *      shrunk to a single line
  * Both auto-hide while you scroll down and slide back in when you scroll up.
  *
  * While they are showing, GitHub's own sticky PR title bar fades out, so you
@@ -64,6 +65,7 @@
   --ghsn-tabs-top: 0px;    /* PR block: navH - strip offset (negative)        */
   --ghsn-tabs-shift: 0px;  /* how far to lift the PR block when hiding        */
   --ghsn-dur: 160ms;       /* slide / fade duration                           */
+  --ghsn-title-size: 13px; /* PR title size while pinned (0 to keep it full)  */
 }
 
 /* ---- strip 1: the repository nav ------------------------------------ */
@@ -129,6 +131,25 @@ html.ghsn-active.ghsn-pinned.ghsn-tabs .ghsn-nav {
 
 html.ghsn-active.ghsn-pinned.ghsn-tabs .ghsn-tabstrip {
   box-shadow: 0 3px 6px -3px rgba(0, 0, 0, 0.12);
+}
+
+/* ---- the PR title, shrunk while pinned ----------------------------- */
+/* Only while pinned, so the top of the page keeps its full-size heading. One
+ * line with an ellipsis: a long title would otherwise wrap and cost more
+ * height than the whole point of shrinking it saves.
+ *
+ * Note this does change layout — the header block gets shorter as it pins, so
+ * content below it shifts up once by the difference. Using transform: scale()
+ * instead would avoid that but save no space at all, which defeats the object. */
+
+html.ghsn-active.ghsn-pinned .ghsn-title {
+  font-size: var(--ghsn-title-size) !important;
+  line-height: 1.35 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 /* ---- GitHub's own fixed sticky bars -------------------------------- */
@@ -210,7 +231,8 @@ html.ghsn-active {
  *   1. the repository nav  (Code / Pull requests / Agents / Actions / ...)
  *   2. the pull-request tab strip (Conversation / Commits / Checks / Files
  *      changed), with the state row above it — the Open/Merged badge and the
- *      "merged N commits into main from ..." line — unless that is turned off
+ *      "merged N commits into main from ..." line — and the PR title, shrunk to
+ *      a single line. Either extra can be turned off in CONFIG.
  *
  * They slide out of the way when you scroll down and come straight back when
  * you scroll up, touch the top edge of the window with the mouse, or tab into
@@ -241,6 +263,9 @@ html.ghsn-active {
     // commits into main from ..." line — visible above the tab strip. Costs the
     // height of that one row. Set false to show the tab strip alone.
     includeStateRow: true,
+    // Also keep the PR/issue title on screen, shrunk to one line so it costs as
+    // little height as possible. Size lives in --ghsn-title-size in the CSS.
+    includeTitle: true,
     // Extra selectors for other fixed bars that sit at top: 0 and should be
     // pushed down while the nav shows. Matching elements get .ghsn-offset.
     extraOffsetSelectors: [],
@@ -271,6 +296,16 @@ html.ghsn-active {
     '.gh-header-meta .State',
   ];
 
+  // The PR/issue title. Named classes first, then any visible <h1> above the tab
+  // strip — the title has been an <h1> through every GitHub redesign so far.
+  const TITLE_SELECTORS = [
+    '.gh-header-title',
+    '[class*="TitleArea"] h1',
+    'h1[class*="Title"]',
+    '[data-testid="issue-title"]',
+    'h1',
+  ];
+
   const root = document.documentElement;
 
   let nav = null;       // the repo nav <nav>
@@ -278,6 +313,7 @@ html.ghsn-active {
   let tabs = null;      // the PR tab strip <nav>
   let block = null;     // block we pin so the tab strip stays put
   let stateBadge = null; // Open/Merged badge, when we are keeping its row visible
+  let title = null;      // PR/issue title, when we are keeping it on screen
 
   // stripH is the height of everything we keep visible from the PR block, and
   // offset is where that strip starts inside the block — the point that should
@@ -363,20 +399,32 @@ html.ghsn-active {
   // We use the badge only for its position — the top of the pinned strip is
   // derived from where the badge sits, not from any assumption about which
   // element is "the row". That keeps working however GitHub nests the header.
-  const findStateBadge = () => {
-    if (!CONFIG.includeStateRow || !tabs) return null;
+  const findMarkerAbove = (selectors) => {
+    if (!tabs) return null;
 
     const tabsTop = tabs.getBoundingClientRect().top;
-    for (const sel of STATE_SELECTORS) {
+    for (const sel of selectors) {
+      let best = null;
+      let bestTop = -Infinity;
       for (const el of document.querySelectorAll(sel)) {
         if (tabs.contains(el)) continue;
         const r = el.getBoundingClientRect();
         // Must be visible and above the tab strip to be worth keeping on screen.
-        if (r.height > 0 && r.top < tabsTop) return el;
+        if (r.height <= 0 || r.top >= tabsTop) continue;
+        // Of several candidates take the lowest — the one belonging to this
+        // header rather than something further up the page.
+        if (r.top > bestTop) { best = el; bestTop = r.top; }
       }
+      if (best) return best;
     }
     return null;
   };
+
+  const findStateBadge = () =>
+    CONFIG.includeStateRow ? findMarkerAbove(STATE_SELECTORS) : null;
+
+  const findTitle = () =>
+    CONFIG.includeTitle ? findMarkerAbove(TITLE_SELECTORS) : null;
 
   // The badge has to be inside the block we pin, or pinning cannot keep it on
   // screen. When our block stopped short of it, widen to the nearest ancestor
@@ -436,12 +484,14 @@ html.ghsn-active {
     // The strip runs from the top of the anchor row — the state row, when we
     // found one — down to the bottom of the tab strip. Without an anchor row
     // that is just the tab strip itself.
+    // The strip starts at the highest marker we are keeping on screen, with a
+    // little headroom so its row isn't sheared off, and never above the block
+    // itself — we cannot show what we don't pin.
     let top = tr.top;
-    if (stateBadge && stateBadge.isConnected) {
-      const sr = stateBadge.getBoundingClientRect();
-      // A little headroom above the badge so its row doesn't look sheared off,
-      // and never above the block itself — we cannot show what we don't pin.
-      if (sr.height > 0 && sr.top < tr.top) top = Math.max(br.top, sr.top - STATE_PAD);
+    for (const marker of [stateBadge, title]) {
+      if (!marker || !marker.isConnected) continue;
+      const mr = marker.getBoundingClientRect();
+      if (mr.height > 0 && mr.top < top) top = Math.max(br.top, mr.top - STATE_PAD);
     }
     const stripH = Math.round(tr.bottom - top);
     const offset = Math.round(top - br.top);      // strip's position in the block
@@ -518,7 +568,7 @@ html.ghsn-active {
     clearMarks();
     clearExtraOffsets();
     ro?.disconnect();
-    nav = wrapper = tabs = block = stateBadge = null;
+    nav = wrapper = tabs = block = stateBadge = title = null;
     hidden = false;
   };
 
@@ -588,6 +638,7 @@ html.ghsn-active {
     nav?.classList.remove('ghsn-nav');
     block?.classList.remove('ghsn-tabsblock');
     tabs?.classList.remove('ghsn-tabstrip');
+    title?.classList.remove('ghsn-title');
   };
 
   let ro = null;
@@ -603,28 +654,38 @@ html.ghsn-active {
     tabs?.classList.remove('ghsn-tabstrip');
     tabs = found;
     block = found ? climbToPageBlock(found) : null;
-    stateBadge = null;
+    title?.classList.remove('ghsn-title');
+    stateBadge = title = null;
 
     if (tabs && block && block !== tabs) {
-      // Resolve the badge before marking the block: covering it may mean pinning
-      // a wider block than the tab strip alone would have needed.
+      // Resolve the markers before marking the block: covering them may mean
+      // pinning a wider block than the tab strip alone would have needed.
       stateBadge = findStateBadge();
-      if (stateBadge && !block.contains(stateBadge)) {
-        const wider = widenToCover(block, stateBadge);
+      title = findTitle();
+
+      for (const marker of ['stateBadge', 'title']) {
+        const el = marker === 'stateBadge' ? stateBadge : title;
+        if (!el || block.contains(el)) continue;
+        const wider = widenToCover(block, el);
         if (wider) block = wider;
-        else stateBadge = null;   // cannot pin it, so don't pretend we can
+        // Still out of reach? Then we cannot keep it on screen, so drop it
+        // rather than measuring against something we don't pin.
+        else if (marker === 'stateBadge') stateBadge = null;
+        else title = null;
       }
 
       tabs.classList.add('ghsn-tabstrip');
       block.classList.add('ghsn-tabsblock');
+      title?.classList.add('ghsn-title');
       ro?.observe(tabs);
       ro?.observe(block);
       if (stateBadge) ro?.observe(stateBadge);
+      if (title) ro?.observe(title);
 
       log('tabs', describe(tabs), '| block', describe(block),
-          '| state badge', describe(stateBadge));
+          '| state badge', describe(stateBadge), '| title', describe(title));
     } else {
-      tabs = block = stateBadge = null;
+      tabs = block = stateBadge = title = null;
       root.classList.remove('ghsn-tabs');
       setVar('--ghsn-tabs-h', 0);
       geo.stripH = 0;
@@ -669,7 +730,7 @@ html.ghsn-active {
     ro.observe(nav);
     ro.observe(wrapper);
 
-    tabs = block = stateBadge = null;
+    tabs = block = stateBadge = title = null;
     attachTabs();
 
     if (!measure()) {
