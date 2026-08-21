@@ -1,0 +1,35 @@
+// ==UserScript==
+// @name         GitHub Sticky Repo Nav
+// @namespace    https://github.com/colfin-96/ai-lab
+// @version      {{version}}
+// @description  Keeps GitHub's repo nav and the PR tab strip (Conversation / Commits / Checks / Files changed) reachable: they hide as you scroll down and slide back in the moment you scroll up.
+// @author       colfin-96
+{{matches}}
+// @run-at       document-start
+// @grant        none
+// @noframes
+// ==/UserScript==
+
+/* ---------------------------------------------------------------------------
+ * INSTALL
+ *   1. Install Tampermonkey (or Violentmonkey) from the Chrome Web Store.
+ *   2. Tampermonkey icon -> Dashboard -> "+" (Utilities > File > Import also works).
+ *   3. Paste this whole file in, replacing the template, then Ctrl/Cmd+S.
+ *   4. Reload any open GitHub tab.
+ *
+ * Self-hosted GitHub Enterprise Server on your own domain? Add a line like
+ *   // @match        https://github.example.com/*
+ * to the header above.
+ *
+ * BEHAVIOUR
+ *   Two strips are pinned to the top: the repo nav (Code / Pull requests /
+ *   Actions / ...) and the PR tab strip (Conversation / Commits / Checks /
+ *   Files changed). They slide away as you scroll down and come back when you
+ *   scroll up, move the pointer to the top edge, or tab into them. While they
+ *   show, GitHub's own sticky PR title bar fades out, so you never get three
+ *   stacked decks.
+ *
+ * TUNING
+ *   See the CONFIG block further down. `alwaysVisible: true` pins the strips
+ *   permanently; `pinSubTabs: false` goes back to the repo nav alone.
+ * ------------------------------------------------------------------------- */

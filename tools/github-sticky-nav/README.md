@@ -67,10 +67,13 @@ userscript header.
 
 ## Tuning
 
-Both versions carry the same `CONFIG` block at the top of the script —
-`extension/sticky-nav.js` or `githubstickynav.user.js`. Edit it, then reload
-(the reload icon on the extension card in `chrome://extensions`, or just save in
-the Tampermonkey editor).
+Both versions carry the same `CONFIG` block at the top of the script. Edit it,
+then reload — the reload icon on the extension card in `chrome://extensions`, or
+just save in the Tampermonkey editor.
+
+Tweaking your own installed copy is fine either way. If you are changing the
+version in this repo, edit `extension/sticky-nav.js` and regenerate — see
+[Keeping the two copies in sync](#keeping-the-two-copies-in-sync).
 
 | Option | Default | Effect |
 | --- | --- | --- |
@@ -109,8 +112,31 @@ or the tab strip isn't present.
 
 ## Keeping the two copies in sync
 
-The extension and the userscript are separate files containing the same logic —
-`extension/sticky-nav.js` plus `extension/sticky-nav.css` on one side, and the
-same script with the CSS inlined on the other. A change to the behaviour has to
-be made in both, and the `version` in `manifest.json` should match `@version` in
-the userscript header.
+**`extension/` is the source of truth. `githubstickynav.user.js` is generated —
+don't edit it by hand.**
+
+Make every change in `extension/sticky-nav.js`, `extension/sticky-nav.css`, or
+`extension/manifest.json`, then regenerate:
+
+```bash
+cd tools/github-sticky-nav
+node build.mjs
+```
+
+The generated userscript is committed, because Tampermonkey users install it by
+copying the file straight out of the repo. Before committing a change, confirm
+the two are in step:
+
+```bash
+node build.mjs --check    # exits non-zero if the committed file is stale
+```
+
+`build.mjs` needs Node and nothing else — no `package.json`, no dependencies,
+nothing to install. It inlines the stylesheet into the userscript's template
+literal, appends the behaviour verbatim, and fills the metadata block from
+`userscript-header.txt`: `{{version}}` comes from `manifest.json`, and the
+`@match` lines are generated from the manifest's `matches` array, so the two
+installs can never disagree about which hosts they cover.
+
+Editing the metadata block — the `@name`/`@description`/install notes — means
+editing `userscript-header.txt`, not the generated file.
