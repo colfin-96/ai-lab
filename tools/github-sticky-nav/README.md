@@ -106,6 +106,7 @@ version in this repo, edit `extension/sticky-nav.js` and regenerate — see
 | `includeStateRow` | `true` | `false` pins the tab strip without the state row above it — the Open/Merged badge and the "merged N commits into main" line — saving about 32px. |
 | `pointerZone` | `8` | How close to the top edge (px) the pointer must get. |
 | `extraOffsetSelectors` | `[]` | CSS selectors for any *other* fixed bar that sits at `top: 0` and should be pushed down while the nav shows. |
+| `debug` | `false` | `true` logs what each attach found — nav, wrapper, tab strip, state badge, geometry — to the page console. Start here if the strip isn't picking something up. |
 
 Visual tweaks (slide speed, the shadow under the bar) live in
 `extension/sticky-nav.css`, or in the inlined style block at the top of the
@@ -132,12 +133,16 @@ parent that extends below it. `div.js-header-wrapper` is tried first as a fast
 path, but only if it passes the same test, so a renamed or restructured wrapper
 falls back to the climb rather than pinning something useless.
 
-How much of the PR block stays on screen is set by which row we treat as its
-top edge. By default that is the state row, found by locating the Open/Merged
-badge and taking whichever direct child of the block contains it; with
-`includeStateRow: false` it is the tab strip instead. Either way the rows above
-it scroll off and land *behind* the repo nav strip, which is opaque and sits one
-z-index higher, so they're never visible.
+How much of the PR block stays on screen is set by where the strip's top edge
+falls. By default that is just above the Open/Merged badge, which is used purely
+as a position marker — the script never assumes which element counts as "the
+row", because in GitHub's header the state row and the tab strip are often
+siblings inside one shared container. If the badge turns out to sit outside the
+block that was picked for the tab strip, the block widens to the nearest ancestor
+covering both, provided that ancestor can still travel. With
+`includeStateRow: false` the top edge is the tab strip itself. Either way the rows
+above it scroll off and land *behind* the repo nav strip, which is opaque and sits
+one z-index higher, so they're never visible.
 
 ### When it gets it wrong
 
