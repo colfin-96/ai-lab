@@ -66,15 +66,23 @@ not attempted a fifth time the same way:
 | 1.5.0 | stop fading it, stack below it | still absent — under our pinning GitHub never reveals its bar at all, because the real title never leaves the viewport |
 | 1.6.0 | pin our own title again, fade GitHub's bar only while ours is showing | title appeared, but at full size and wrapping |
 | 1.6.1 | shrink the title's descendants too, not just the heading | title shrank, but #123 beside it did not — it is a sibling, not a child |
-| 1.7.0 | shrink the whole title row; stand the badge to the left of both lines | current |
+| 1.7.0 | shrink the whole title row; stand the badge to the left of both lines | no visible change: the row lookup required a direct child of the block and so matched nothing |
+| 1.7.1 | climb to the outermost ancestor that excludes the tabs; lift the badge in flow | current |
 
 Working assumption: **GitHub's bar cannot be relied on while we pin the header.**
 It is the fallback for when the title cannot be found, not the primary path.
 
-The 1.6.1 lesson is separate and worth keeping: what we mark as the title is a
-heading that wraps its text in further elements, and at least one of them (the
-issue number) sets its own font size. Styling the heading alone leaves those
-children at full size, so the shrink has to apply to `.ghsn-title *` as well.
+Two separate lessons from the same area, both worth keeping:
+
+* What we mark as the title is a heading whose text is wrapped in further
+  elements, and the issue number sits *beside* it rather than inside — so
+  shrinking the heading, or even its descendants, leaves `#123` full size. The
+  shrink has to cover the whole row.
+* GitHub's header does not give each row its own child of the block. Title row,
+  state row and tab strip commonly share one container, which is why any test of
+  the form "is this a direct child of the block" matches nothing. This has broken
+  1.3.0 and 1.7.0 in different ways. Climb to the outermost ancestor that still
+  excludes the tab strip instead.
 
 | # | Check | Expected | Status |
 |---|---|---|---|

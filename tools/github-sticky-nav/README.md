@@ -161,19 +161,27 @@ GitHub's own bar stands the Open/Merged badge to the left of two stacked lines �
 title on top, "wants to merge …" underneath. Reproducing that from the outside
 means working with rows we cannot reparent, so:
 
-* the badge is taken out of flow and positioned against the pinned block, with
-  its centre line measured over the two text rows only — not the whole block,
-  most of which sits behind the repo nav
-* both rows are indented by the badge's measured width plus `--ghsn-badge-gap`
+* the badge is lifted by half the title row's height, which puts its centre on
+  the midpoint of the two lines, and stays in flow while doing it — absolute
+  positioning would resolve against whichever ancestor happens to be positioned,
+  which is not knowable from out here
+* the title row is indented by the badge's measured width plus
+  `--ghsn-badge-gap`. The state row needs no indent, since the badge is still in
+  flow there and its text already starts after it
 * the title's whole row is shrunk, not just the heading, because the issue
   number sits beside it and carries its own font size. The Code button and check
   summary shrink too, which is deliberate: a row is only as short as its tallest
   item.
 
-The row lookup this needs — "which child of the block contains the badge" — is
-the same fragile trick that broke an earlier version when it drove geometry. Here
-it only decides what to restyle, and if it finds nothing the layout is simply
-left alone.
+Finding those rows means climbing to the outermost ancestor of each marker that
+still leaves the tab strip out. The obvious test — "direct child of the pinned
+block" — rejects everything, because that child is usually a single container
+holding the title row, the state row and the tabs together. That shape has now
+broken two different versions, so it is worth stating plainly: **in GitHub's
+header, do not assume the rows are separate children.**
+
+If the lookup finds nothing the layout is simply left alone, so the styling
+degrades to plain stacked rows rather than breaking.
 
 ### GitHub's own bar
 

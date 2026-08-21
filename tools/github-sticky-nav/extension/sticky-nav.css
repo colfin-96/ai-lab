@@ -24,7 +24,7 @@
   --ghsn-ghbar-h: 0px;     /* GitHub's own sticky bar, 0 when not showing     */
   --ghsn-title-size: 13px; /* PR title size while pinned                      */
   --ghsn-badge-w: 0px;     /* Open/Merged badge width, for the indent         */
-  --ghsn-badge-mid: 0px;   /* its centre line inside the pinned block         */
+  --ghsn-titlerow-h: 0px;  /* title row height, to lift the badge by half     */
   --ghsn-badge-gap: 12px;  /* space between the badge and the text            */
   --ghsn-dur: 160ms;       /* slide / fade duration                           */
 }
@@ -128,22 +128,23 @@ html.ghsn-active.ghsn-pinned .ghsn-titlerow * {
 /* ---- badge to the left of both lines ------------------------------- */
 /* GitHub's own compact bar stands the Open/Merged badge to the left of the
  * title and the "wants to merge" line, rather than inline at the start of the
- * second one. We cannot reparent anything, so the badge is taken out of flow
- * and positioned against the pinned block, and both rows are indented to leave
- * room for it. --ghsn-badge-mid is measured over the two text rows only, not
- * the whole block, most of which sits out of sight behind the repo nav. */
+ * second one. Nothing can be reparented from out here, so instead the badge is
+ * lifted by half the title row's height — putting its centre on the midpoint of
+ * the two lines — and the title row is indented to clear it. The state row needs
+ * no indent: the badge is still in flow there, so its text already starts after
+ * it.
+ *
+ * Relative rather than absolute on purpose. Absolute would resolve against
+ * whichever ancestor happens to be positioned, which is not something we can
+ * know from out here; in flow, the offsets mean what they say. */
 
 html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-badge {
-  position: absolute !important;
-  left: 0 !important;
-  top: var(--ghsn-badge-mid) !important;
-  transform: translateY(-50%) !important;
-  margin: 0 !important;
-  z-index: 1;
+  position: relative !important;
+  top: calc(-0.5 * var(--ghsn-titlerow-h)) !important;
+  margin-right: var(--ghsn-badge-gap) !important;
 }
 
-html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-titlerow,
-html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-staterow {
+html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-titlerow {
   padding-left: calc(var(--ghsn-badge-w) + var(--ghsn-badge-gap)) !important;
 }
 

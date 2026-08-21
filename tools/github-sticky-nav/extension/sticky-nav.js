@@ -109,7 +109,7 @@
   // stripH is the height of everything we keep visible from the PR block, and
   // offset is where that strip starts inside the block — the point that should
   // land at navH once pinned, which is also what the fail-safe checks.
-  const geo = { navH: 0, wrapH: 0, stripH: 0, offset: 0, ghBarH: 0, badgeW: 0, badgeMid: 0, tabsTop: 0, tabsShift: 0 };
+  const geo = { navH: 0, wrapH: 0, stripH: 0, offset: 0, ghBarH: 0, badgeW: 0, titleRowH: 0, tabsTop: 0, tabsShift: 0 };
 
   let lastY = 0;
   let hidden = false;
@@ -224,10 +224,18 @@
   // siblings in a shared container. Here it only decides what to restyle, and a
   // null result just means we leave the layout alone.
   const rowOf = (el) => {
-    if (!el || !block) return null;
+    if (!el || !block || !tabs || !block.contains(el)) return null;
+
+    // Climb to the outermost ancestor that still leaves the tab strip out. Not
+    // "direct child of the block": the block's own child is typically one
+    // container holding the title row, the state row and the tabs together, so
+    // that test rejects everything.
     let row = el;
-    while (row.parentElement && row.parentElement !== block) row = row.parentElement;
-    if (row.parentElement !== block) return null;
+    for (let i = 0; i < MAX_CLIMB; i++) {
+      const parent = row.parentElement;
+      if (!parent || parent === block || parent.contains(tabs)) break;
+      row = parent;
+    }
     if (row === tabs || row.contains(tabs)) return null;
     return row;
   };
@@ -358,18 +366,22 @@
     // plus a few px so the drop shadow doesn't smudge the top of the window.
     const tabsShift = navH + ghBarH + Math.max(stripH, blockH - offset) + 4;
 
-    // The badge stands to the left of the two text rows, so it needs its own
-    // width to indent them by, and a centre line over the rows only — not over
-    // the whole block, most of which is scrolled out of sight behind the nav.
+    // Standing the badge left needs two numbers: its own width, to indent the
+    // title row by, and the title row's height, to lift the badge by half of so
+    // it centres across both lines. It stays in flow, so nothing here depends on
+    // which ancestor happens to be positioned.
     if (stateBadge && stateBadge.isConnected) {
       const badgeW = Math.round(stateBadge.getBoundingClientRect().width);
-      const rowsH = Math.round(tr.top - top);   // strip top down to the tab strip
-      const badgeMid = offset + Math.round(rowsH / 2);
-      if (badgeW !== geo.badgeW || badgeMid !== geo.badgeMid) {
+      if (badgeW !== geo.badgeW) {
         geo.badgeW = badgeW;
-        geo.badgeMid = badgeMid;
         setVar('--ghsn-badge-w', badgeW);
-        setVar('--ghsn-badge-mid', badgeMid);
+      }
+    }
+    if (titleRow && titleRow.isConnected) {
+      const titleRowH = Math.round(titleRow.getBoundingClientRect().height);
+      if (titleRowH !== geo.titleRowH) {
+        geo.titleRowH = titleRowH;
+        setVar('--ghsn-titlerow-h', titleRowH);
       }
     }
 

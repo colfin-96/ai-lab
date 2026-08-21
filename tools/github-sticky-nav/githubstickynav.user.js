@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GitHub Sticky Repo Nav
 // @namespace    https://github.com/colfin-96/ai-lab
-// @version      1.7.0
+// @version      1.7.1
 // @description  Keeps GitHub's repo nav and the PR tab strip (Conversation / Commits / Checks / Files changed) reachable: they hide as you scroll down and slide back in the moment you scroll up.
 // @author       colfin-96
 // @match        https://github.com/*
@@ -66,7 +66,7 @@
   --ghsn-ghbar-h: 0px;     /* GitHub's own sticky bar, 0 when not showing     */
   --ghsn-title-size: 13px; /* PR title size while pinned                      */
   --ghsn-badge-w: 0px;     /* Open/Merged badge width, for the indent         */
-  --ghsn-badge-mid: 0px;   /* its centre line inside the pinned block         */
+  --ghsn-titlerow-h: 0px;  /* title row height, to lift the badge by half     */
   --ghsn-badge-gap: 12px;  /* space between the badge and the text            */
   --ghsn-dur: 160ms;       /* slide / fade duration                           */
 }
@@ -170,22 +170,23 @@ html.ghsn-active.ghsn-pinned .ghsn-titlerow * {
 /* ---- badge to the left of both lines ------------------------------- */
 /* GitHub's own compact bar stands the Open/Merged badge to the left of the
  * title and the "wants to merge" line, rather than inline at the start of the
- * second one. We cannot reparent anything, so the badge is taken out of flow
- * and positioned against the pinned block, and both rows are indented to leave
- * room for it. --ghsn-badge-mid is measured over the two text rows only, not
- * the whole block, most of which sits out of sight behind the repo nav. */
+ * second one. Nothing can be reparented from out here, so instead the badge is
+ * lifted by half the title row's height — putting its centre on the midpoint of
+ * the two lines — and the title row is indented to clear it. The state row needs
+ * no indent: the badge is still in flow there, so its text already starts after
+ * it.
+ *
+ * Relative rather than absolute on purpose. Absolute would resolve against
+ * whichever ancestor happens to be positioned, which is not something we can
+ * know from out here; in flow, the offsets mean what they say. */
 
 html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-badge {
-  position: absolute !important;
-  left: 0 !important;
-  top: var(--ghsn-badge-mid) !important;
-  transform: translateY(-50%) !important;
-  margin: 0 !important;
-  z-index: 1;
+  position: relative !important;
+  top: calc(-0.5 * var(--ghsn-titlerow-h)) !important;
+  margin-right: var(--ghsn-badge-gap) !important;
 }
 
-html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-titlerow,
-html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-staterow {
+html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-titlerow {
   padding-left: calc(var(--ghsn-badge-w) + var(--ghsn-badge-gap)) !important;
 }
 
@@ -386,7 +387,7 @@ html.ghsn-active {
   // stripH is the height of everything we keep visible from the PR block, and
   // offset is where that strip starts inside the block — the point that should
   // land at navH once pinned, which is also what the fail-safe checks.
-  const geo = { navH: 0, wrapH: 0, stripH: 0, offset: 0, ghBarH: 0, badgeW: 0, badgeMid: 0, tabsTop: 0, tabsShift: 0 };
+  const geo = { navH: 0, wrapH: 0, stripH: 0, offset: 0, ghBarH: 0, badgeW: 0, titleRowH: 0, tabsTop: 0, tabsShift: 0 };
 
   let lastY = 0;
   let hidden = false;
@@ -501,10 +502,18 @@ html.ghsn-active {
   // siblings in a shared container. Here it only decides what to restyle, and a
   // null result just means we leave the layout alone.
   const rowOf = (el) => {
-    if (!el || !block) return null;
+    if (!el || !block || !tabs || !block.contains(el)) return null;
+
+    // Climb to the outermost ancestor that still leaves the tab strip out. Not
+    // "direct child of the block": the block's own child is typically one
+    // container holding the title row, the state row and the tabs together, so
+    // that test rejects everything.
     let row = el;
-    while (row.parentElement && row.parentElement !== block) row = row.parentElement;
-    if (row.parentElement !== block) return null;
+    for (let i = 0; i < MAX_CLIMB; i++) {
+      const parent = row.parentElement;
+      if (!parent || parent === block || parent.contains(tabs)) break;
+      row = parent;
+    }
     if (row === tabs || row.contains(tabs)) return null;
     return row;
   };
@@ -635,18 +644,22 @@ html.ghsn-active {
     // plus a few px so the drop shadow doesn't smudge the top of the window.
     const tabsShift = navH + ghBarH + Math.max(stripH, blockH - offset) + 4;
 
-    // The badge stands to the left of the two text rows, so it needs its own
-    // width to indent them by, and a centre line over the rows only — not over
-    // the whole block, most of which is scrolled out of sight behind the nav.
+    // Standing the badge left needs two numbers: its own width, to indent the
+    // title row by, and the title row's height, to lift the badge by half of so
+    // it centres across both lines. It stays in flow, so nothing here depends on
+    // which ancestor happens to be positioned.
     if (stateBadge && stateBadge.isConnected) {
       const badgeW = Math.round(stateBadge.getBoundingClientRect().width);
-      const rowsH = Math.round(tr.top - top);   // strip top down to the tab strip
-      const badgeMid = offset + Math.round(rowsH / 2);
-      if (badgeW !== geo.badgeW || badgeMid !== geo.badgeMid) {
+      if (badgeW !== geo.badgeW) {
         geo.badgeW = badgeW;
-        geo.badgeMid = badgeMid;
         setVar('--ghsn-badge-w', badgeW);
-        setVar('--ghsn-badge-mid', badgeMid);
+      }
+    }
+    if (titleRow && titleRow.isConnected) {
+      const titleRowH = Math.round(titleRow.getBoundingClientRect().height);
+      if (titleRowH !== geo.titleRowH) {
+        geo.titleRowH = titleRowH;
+        setVar('--ghsn-titlerow-h', titleRowH);
       }
     }
 
