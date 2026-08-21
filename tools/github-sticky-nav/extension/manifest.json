@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "GitHub Sticky Repo Nav",
+  "version": "1.1.0",
+  "description": "Keeps GitHub's repo nav and the PR tab strip (Conversation / Commits / Checks / Files changed) reachable: they hide as you scroll down and slide back in the moment you scroll up.",
+  "content_scripts": [
+    {
+      "matches": [
+        "https://github.com/*",
+        "https://*.github.com/*",
+        "https://*.ghe.com/*"
+      ],
+      "css": [
+        "sticky-nav.css"
+      ],
+      "js": [
+        "sticky-nav.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": false
+    }
+  ]
+}

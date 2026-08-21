@@ -1,0 +1,142 @@
+/* GitHub Sticky Repo Nav
+ *
+ * Two strips are pinned to the top of the viewport:
+ *   1. the repository nav  (Code / Pull requests / Agents / Actions / ...)
+ *   2. the pull-request tab strip (Conversation / Commits / Checks / Files changed)
+ * Both auto-hide while you scroll down and slide back in when you scroll up.
+ *
+ * While they are showing, GitHub's own sticky PR title bar fades out, so you
+ * never get three stacked decks. Scroll down and it comes straight back.
+ *
+ * All geometry comes from CSS custom properties that sticky-nav.js measures at
+ * runtime, so this keeps working when GitHub changes header heights, when the
+ * enterprise banner is present/absent, or on narrow windows.
+ */
+
+:root {
+  --ghsn-nav-h: 48px;      /* height of the repo nav strip                    */
+  --ghsn-pin-top: 0px;     /* repo nav: navH - full header height (negative)  */
+  --ghsn-tabs-h: 0px;      /* height of the PR tab strip (0 = none on page)   */
+  --ghsn-tabs-top: 0px;    /* PR block: navH - strip offset (negative)        */
+  --ghsn-tabs-shift: 0px;  /* how far to lift the PR block when hiding        */
+  --ghsn-dur: 160ms;       /* slide / fade duration                           */
+}
+
+/* ---- strip 1: the repository nav ------------------------------------ */
+
+html.ghsn-active .ghsn-wrapper {
+  position: sticky !important;
+  top: var(--ghsn-pin-top) !important;
+  z-index: 13;                       /* above strip 2 and GitHub's own bars */
+  transition: transform var(--ghsn-dur) ease;
+  will-change: transform;
+}
+
+html.ghsn-active.ghsn-pinned.ghsn-hidden .ghsn-wrapper {
+  /* +4px so the strip's drop shadow clears the top of the window too */
+  transform: translateY(calc(-1 * (var(--ghsn-nav-h) + 4px)));
+}
+
+/* ---- strip 2: the pull-request tab strip ---------------------------- */
+/* We pin the whole PR page-header block with a negative offset so only its
+ * bottom edge — the tab strip — stays on screen. The rows above it land
+ * behind strip 1, which is opaque, so they are never visible. */
+
+html.ghsn-active.ghsn-tabs .ghsn-tabsblock {
+  position: sticky !important;
+  top: var(--ghsn-tabs-top) !important;
+  z-index: 12;
+  transition: transform var(--ghsn-dur) ease;
+  will-change: transform;
+}
+
+html.ghsn-active.ghsn-tabs.ghsn-pinned.ghsn-hidden .ghsn-tabsblock {
+  transform: translateY(calc(-1 * var(--ghsn-tabs-shift)));
+}
+
+/* ---- make the pinned strips opaque --------------------------------- */
+/* Only while actually pinned, so the top of the page looks untouched.  */
+
+html.ghsn-active.ghsn-pinned .ghsn-nav,
+html.ghsn-active.ghsn-pinned .ghsn-tabstrip {
+  background-color: var(--bgColor-default, var(--color-canvas-default, #ffffff)) !important;
+}
+
+html.ghsn-active.ghsn-pinned .ghsn-nav {
+  box-shadow:
+    inset 0 -1px 0 var(--borderColor-muted, var(--color-border-muted, #d1d9e0)),
+    0 3px 6px -3px rgba(0, 0, 0, 0.12);
+}
+
+html.ghsn-active.ghsn-pinned.ghsn-tabs .ghsn-nav {
+  box-shadow: inset 0 -1px 0 var(--borderColor-muted, var(--color-border-muted, #d1d9e0));
+}
+
+html.ghsn-active.ghsn-pinned.ghsn-tabs .ghsn-tabstrip {
+  box-shadow: 0 3px 6px -3px rgba(0, 0, 0, 0.12);
+}
+
+/* ---- GitHub's own fixed sticky bars -------------------------------- */
+
+html.ghsn-active.ghsn-pinned [class*="use-sticky-header-module__stickyHeader"],
+html.ghsn-active.ghsn-pinned [class*="StickyPullRequestHeader-module"],
+html.ghsn-active.ghsn-pinned [class*="StickyIssueHeader-module"],
+html.ghsn-active.ghsn-pinned .gh-header-sticky,
+html.ghsn-active.ghsn-pinned .ghsn-offset {
+  transition: top var(--ghsn-dur) ease, opacity var(--ghsn-dur) ease;
+}
+
+/* No tab strip on this page (diff view, code view, ...): push GitHub's bar
+ * down so it clears the repo nav, exactly as before. */
+
+html.ghsn-active.ghsn-pinned:not(.ghsn-tabs) [class*="use-sticky-header-module__stickyHeader"],
+html.ghsn-active.ghsn-pinned:not(.ghsn-tabs) [class*="StickyPullRequestHeader-module"],
+html.ghsn-active.ghsn-pinned:not(.ghsn-tabs) [class*="StickyIssueHeader-module"],
+html.ghsn-active.ghsn-pinned:not(.ghsn-tabs) .gh-header-sticky,
+html.ghsn-active.ghsn-pinned:not(.ghsn-tabs) .ghsn-offset {
+  top: var(--ghsn-nav-h) !important;
+}
+
+html.ghsn-active.ghsn-pinned.ghsn-hidden:not(.ghsn-tabs) [class*="use-sticky-header-module__stickyHeader"],
+html.ghsn-active.ghsn-pinned.ghsn-hidden:not(.ghsn-tabs) [class*="StickyPullRequestHeader-module"],
+html.ghsn-active.ghsn-pinned.ghsn-hidden:not(.ghsn-tabs) [class*="StickyIssueHeader-module"],
+html.ghsn-active.ghsn-pinned.ghsn-hidden:not(.ghsn-tabs) .gh-header-sticky,
+html.ghsn-active.ghsn-pinned.ghsn-hidden:not(.ghsn-tabs) .ghsn-offset {
+  top: 0 !important;
+}
+
+/* Tab strip present: swap. Our two strips showing -> GitHub's bar steps
+ * aside. Our strips hidden -> GitHub's bar behaves exactly as stock. */
+
+html.ghsn-active.ghsn-pinned.ghsn-tabs:not(.ghsn-hidden) [class*="use-sticky-header-module__stickyHeader"],
+html.ghsn-active.ghsn-pinned.ghsn-tabs:not(.ghsn-hidden) [class*="StickyPullRequestHeader-module"],
+html.ghsn-active.ghsn-pinned.ghsn-tabs:not(.ghsn-hidden) [class*="StickyIssueHeader-module"],
+html.ghsn-active.ghsn-pinned.ghsn-tabs:not(.ghsn-hidden) .gh-header-sticky {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ---- anchor jumps shouldn't land underneath the pinned strips ------- */
+
+html.ghsn-active {
+  scroll-padding-top: calc(var(--ghsn-nav-h) + var(--ghsn-tabs-h) + 8px);
+}
+
+/* ---- accessibility -------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  html.ghsn-active .ghsn-wrapper,
+  html.ghsn-active .ghsn-tabsblock,
+  html.ghsn-active.ghsn-pinned [class*="stickyHeader"] {
+    transition: none !important;
+  }
+}
+
+/* Printing should never include a floating bar. */
+@media print {
+  html.ghsn-active .ghsn-wrapper,
+  html.ghsn-active .ghsn-tabsblock {
+    position: static !important;
+    transform: none !important;
+  }
+}

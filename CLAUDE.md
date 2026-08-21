@@ -11,6 +11,7 @@ Sandbox for AI-related experiments, skills, prompts, and tooling. Not a single p
 | `skills/` | Claude Code slash command skills (`.claude/skills/` format). Copy or reference from here into projects. |
 | `prompts/` | Reusable prompt templates — system prompts, user prompts, chains. |
 | `agents/` | Agent definitions, configs, and orchestration scripts. |
+| `tools/` | Standalone utilities that aren't skills — browser extensions, userscripts, small scripts. One folder per tool, each with its own README. |
 | `obsidian/templates/` | Obsidian note templates. |
 | `obsidian/rules/` | Obsidian automation rules (Templater, QuickAdd, etc.). |
 | `obsidian/settings/` | Vault config snapshots (`.obsidian/` exports). |
