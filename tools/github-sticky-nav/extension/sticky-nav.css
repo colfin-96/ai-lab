@@ -23,6 +23,9 @@
   --ghsn-tabs-shift: 0px;  /* how far to lift the PR block when hiding        */
   --ghsn-ghbar-h: 0px;     /* GitHub's own sticky bar, 0 when not showing     */
   --ghsn-title-size: 13px; /* PR title size while pinned                      */
+  --ghsn-badge-w: 0px;     /* Open/Merged badge width, for the indent         */
+  --ghsn-badge-mid: 0px;   /* its centre line inside the pinned block         */
+  --ghsn-badge-gap: 12px;  /* space between the badge and the text            */
   --ghsn-dur: 160ms;       /* slide / fade duration                           */
 }
 
@@ -108,15 +111,48 @@ html.ghsn-active.ghsn-pinned .ghsn-title {
   text-overflow: ellipsis !important;
 }
 
-/* The descendants matter as much as the element itself. What we mark is a
- * heading that wraps the text in further elements — the issue number, for one,
- * carries its own explicit size — so setting font-size on the heading alone
- * leaves those children rendering at full size. */
+/* Shrink the whole title line, not just the heading. The issue number sits
+ * beside the heading rather than inside it, and carries its own explicit size,
+ * so styling the heading alone leaves a small title next to a full-size #123.
+ * The row also holds the Code button and any check summary, which shrink with
+ * it — that is the point, since the row is only as short as its tallest item. */
 
 html.ghsn-active.ghsn-pinned .ghsn-title,
-html.ghsn-active.ghsn-pinned .ghsn-title * {
+html.ghsn-active.ghsn-pinned .ghsn-title *,
+html.ghsn-active.ghsn-pinned .ghsn-titlerow,
+html.ghsn-active.ghsn-pinned .ghsn-titlerow * {
   font-size: var(--ghsn-title-size) !important;
   line-height: 1.35 !important;
+}
+
+/* ---- badge to the left of both lines ------------------------------- */
+/* GitHub's own compact bar stands the Open/Merged badge to the left of the
+ * title and the "wants to merge" line, rather than inline at the start of the
+ * second one. We cannot reparent anything, so the badge is taken out of flow
+ * and positioned against the pinned block, and both rows are indented to leave
+ * room for it. --ghsn-badge-mid is measured over the two text rows only, not
+ * the whole block, most of which sits out of sight behind the repo nav. */
+
+html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-badge {
+  position: absolute !important;
+  left: 0 !important;
+  top: var(--ghsn-badge-mid) !important;
+  transform: translateY(-50%) !important;
+  margin: 0 !important;
+  z-index: 1;
+}
+
+html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-titlerow,
+html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-staterow {
+  padding-left: calc(var(--ghsn-badge-w) + var(--ghsn-badge-gap)) !important;
+}
+
+/* Tighten the two lines towards each other, as the compact bar does. */
+
+html.ghsn-active.ghsn-pinned .ghsn-titlerow,
+html.ghsn-active.ghsn-pinned .ghsn-staterow {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
 }
 
 /* ---- GitHub's own fixed sticky bars -------------------------------- */

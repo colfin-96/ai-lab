@@ -110,6 +110,7 @@ version in this repo, edit `extension/sticky-nav.js` and regenerate — see
 | `pinSubTabs` | `true` | `false` pins only the repo nav, leaving the PR tabs alone (and GitHub's own title bar untouched). |
 | `includeStateRow` | `true` | `false` pins the tab strip without the state row above it — the Open/Merged badge and the "merged N commits into main" line — saving about 32px. |
 | `includeTitle` | `true` | `false` leaves the title out, and lets GitHub's own sticky bar through to show it instead. Size while pinned is the `--ghsn-title-size` CSS variable, 13px by default. |
+| `badgeLeft` | `true` | `false` leaves the Open/Merged badge inline at the start of the state row instead of standing it to the left of both lines. |
 | `pointerZone` | `8` | How close to the top edge (px) the pointer must get. |
 | `extraOffsetSelectors` | `[]` | CSS selectors for any *other* fixed bar that sits at `top: 0` and should be pushed down while the nav shows. |
 | `debug` | `false` | `true` logs what each attach found — nav, wrapper, tab strip, state badge, geometry — to the page console. Start here if the strip isn't picking something up. |
@@ -153,6 +154,26 @@ provided that ancestor can still travel.
 
 Rows above the top edge scroll off and land *behind* the repo nav strip, which is
 opaque and sits one z-index higher, so they're never visible.
+
+### Matching GitHub's compact layout
+
+GitHub's own bar stands the Open/Merged badge to the left of two stacked lines —
+title on top, "wants to merge …" underneath. Reproducing that from the outside
+means working with rows we cannot reparent, so:
+
+* the badge is taken out of flow and positioned against the pinned block, with
+  its centre line measured over the two text rows only — not the whole block,
+  most of which sits behind the repo nav
+* both rows are indented by the badge's measured width plus `--ghsn-badge-gap`
+* the title's whole row is shrunk, not just the heading, because the issue
+  number sits beside it and carries its own font size. The Code button and check
+  summary shrink too, which is deliberate: a row is only as short as its tallest
+  item.
+
+The row lookup this needs — "which child of the block contains the badge" — is
+the same fragile trick that broke an earlier version when it drove geometry. Here
+it only decides what to restyle, and if it finds nothing the layout is simply
+left alone.
 
 ### GitHub's own bar
 

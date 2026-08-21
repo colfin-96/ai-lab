@@ -65,7 +65,8 @@ not attempted a fifth time the same way:
 | 1.4.1 | no title, rely on GitHub's bar | title absent in Chrome: our own CSS was fading GitHub's bar out |
 | 1.5.0 | stop fading it, stack below it | still absent — under our pinning GitHub never reveals its bar at all, because the real title never leaves the viewport |
 | 1.6.0 | pin our own title again, fade GitHub's bar only while ours is showing | title appeared, but at full size and wrapping |
-| 1.6.1 | shrink the title's descendants too, not just the heading | current |
+| 1.6.1 | shrink the title's descendants too, not just the heading | title shrank, but #123 beside it did not — it is a sibling, not a child |
+| 1.7.0 | shrink the whole title row; stand the badge to the left of both lines | current |
 
 Working assumption: **GitHub's bar cannot be relied on while we pin the header.**
 It is the fallback for when the title cannot be found, not the primary path.
@@ -88,6 +89,11 @@ children at full size, so the shrink has to apply to `.ghsn-title *` as well.
 | 25 | Title row is actually shorter | Compare against `includeTitle: false`. The row's height may be floored by the `Code` button beside the title, in which case shrinking the text saves less than expected | ⬜ |
 | 26 | Anchor jumps clear everything | Follow a review-comment permalink: the target lands below all the strips | ⬜ |
 | 27 | Fallback path | Set `includeTitle: false`, regenerate, reload. Either GitHub's own bar appears between the strips — check it is not overlapped and the tab strip sits below it — or it does not appear at all, which is the 1.5.0 finding and means the fallback is cosmetic only | ⬜ |
+| 28 | Badge stands left | The Open/Merged badge sits to the left of both text lines, vertically centred against them, not inline at the start of the second | ⬜ |
+| 29 | Indent matches the badge | No text overlapping the badge, and no excessive gap. A wide badge (Draft, Merged) still lines up | ⬜ |
+| 30 | Issue number is small | `#123` is the same size as the title beside it | ⬜ |
+| 31 | Badge does not drift | Scroll, resize, and soft-navigate between PRs. The badge stays centred on the two rows rather than sliding off | ⬜ |
+| 32 | `badgeLeft: false` | Badge goes back inline at the start of the state row, rows lose their indent | ⬜ |
 
 ### If something is not picked up
 

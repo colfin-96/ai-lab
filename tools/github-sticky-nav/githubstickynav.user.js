@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GitHub Sticky Repo Nav
 // @namespace    https://github.com/colfin-96/ai-lab
-// @version      1.6.1
+// @version      1.7.0
 // @description  Keeps GitHub's repo nav and the PR tab strip (Conversation / Commits / Checks / Files changed) reachable: they hide as you scroll down and slide back in the moment you scroll up.
 // @author       colfin-96
 // @match        https://github.com/*
@@ -65,6 +65,9 @@
   --ghsn-tabs-shift: 0px;  /* how far to lift the PR block when hiding        */
   --ghsn-ghbar-h: 0px;     /* GitHub's own sticky bar, 0 when not showing     */
   --ghsn-title-size: 13px; /* PR title size while pinned                      */
+  --ghsn-badge-w: 0px;     /* Open/Merged badge width, for the indent         */
+  --ghsn-badge-mid: 0px;   /* its centre line inside the pinned block         */
+  --ghsn-badge-gap: 12px;  /* space between the badge and the text            */
   --ghsn-dur: 160ms;       /* slide / fade duration                           */
 }
 
@@ -150,15 +153,48 @@ html.ghsn-active.ghsn-pinned .ghsn-title {
   text-overflow: ellipsis !important;
 }
 
-/* The descendants matter as much as the element itself. What we mark is a
- * heading that wraps the text in further elements — the issue number, for one,
- * carries its own explicit size — so setting font-size on the heading alone
- * leaves those children rendering at full size. */
+/* Shrink the whole title line, not just the heading. The issue number sits
+ * beside the heading rather than inside it, and carries its own explicit size,
+ * so styling the heading alone leaves a small title next to a full-size #123.
+ * The row also holds the Code button and any check summary, which shrink with
+ * it — that is the point, since the row is only as short as its tallest item. */
 
 html.ghsn-active.ghsn-pinned .ghsn-title,
-html.ghsn-active.ghsn-pinned .ghsn-title * {
+html.ghsn-active.ghsn-pinned .ghsn-title *,
+html.ghsn-active.ghsn-pinned .ghsn-titlerow,
+html.ghsn-active.ghsn-pinned .ghsn-titlerow * {
   font-size: var(--ghsn-title-size) !important;
   line-height: 1.35 !important;
+}
+
+/* ---- badge to the left of both lines ------------------------------- */
+/* GitHub's own compact bar stands the Open/Merged badge to the left of the
+ * title and the "wants to merge" line, rather than inline at the start of the
+ * second one. We cannot reparent anything, so the badge is taken out of flow
+ * and positioned against the pinned block, and both rows are indented to leave
+ * room for it. --ghsn-badge-mid is measured over the two text rows only, not
+ * the whole block, most of which sits out of sight behind the repo nav. */
+
+html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-badge {
+  position: absolute !important;
+  left: 0 !important;
+  top: var(--ghsn-badge-mid) !important;
+  transform: translateY(-50%) !important;
+  margin: 0 !important;
+  z-index: 1;
+}
+
+html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-titlerow,
+html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-staterow {
+  padding-left: calc(var(--ghsn-badge-w) + var(--ghsn-badge-gap)) !important;
+}
+
+/* Tighten the two lines towards each other, as the compact bar does. */
+
+html.ghsn-active.ghsn-pinned .ghsn-titlerow,
+html.ghsn-active.ghsn-pinned .ghsn-staterow {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
 }
 
 /* ---- GitHub's own fixed sticky bars -------------------------------- */
@@ -281,6 +317,9 @@ html.ghsn-active {
     // Keep the PR/issue title too, shrunk to one line so it costs as little
     // height as possible. Size lives in --ghsn-title-size in the CSS.
     includeTitle: true,
+    // Lift the Open/Merged badge out of the state row and stand it to the left
+    // of both lines, the way GitHub's own compact bar arranges them.
+    badgeLeft: true,
     // Extra selectors for other fixed bars that sit at top: 0 and should be
     // pushed down while the nav shows. Matching elements get .ghsn-offset.
     extraOffsetSelectors: [],
@@ -339,13 +378,15 @@ html.ghsn-active {
   let block = null;     // block we pin so the tab strip stays put
   let stateBadge = null; // Open/Merged badge, when we are keeping its row visible
   let title = null;      // PR/issue title, when we are keeping it on screen
+  let titleRow = null;   // the row it sits in, so the whole line can be shrunk
+  let stateRow = null;   // the row the badge sits in
   let ghBar = null;      // GitHub's own sticky header, once it turns up
   let ghBarSeen = 0;     // when we last looked for it
 
   // stripH is the height of everything we keep visible from the PR block, and
   // offset is where that strip starts inside the block — the point that should
   // land at navH once pinned, which is also what the fail-safe checks.
-  const geo = { navH: 0, wrapH: 0, stripH: 0, offset: 0, ghBarH: 0, tabsTop: 0, tabsShift: 0 };
+  const geo = { navH: 0, wrapH: 0, stripH: 0, offset: 0, ghBarH: 0, badgeW: 0, badgeMid: 0, tabsTop: 0, tabsShift: 0 };
 
   let lastY = 0;
   let hidden = false;
@@ -452,6 +493,21 @@ html.ghsn-active {
 
   const findTitle = () =>
     CONFIG.includeTitle ? findMarkerAbove(TITLE_SELECTORS) : null;
+
+  // The row a marker belongs to: the child of the pinned block that contains it.
+  //
+  // Deliberately not used for geometry — an earlier version derived the strip's
+  // top edge this way and broke, because the state row and the tab strip are
+  // siblings in a shared container. Here it only decides what to restyle, and a
+  // null result just means we leave the layout alone.
+  const rowOf = (el) => {
+    if (!el || !block) return null;
+    let row = el;
+    while (row.parentElement && row.parentElement !== block) row = row.parentElement;
+    if (row.parentElement !== block) return null;
+    if (row === tabs || row.contains(tabs)) return null;
+    return row;
+  };
 
   // The badge has to be inside the block we pin, or pinning cannot keep it on
   // screen. When our block stopped short of it, widen to the nearest ancestor
@@ -579,6 +635,21 @@ html.ghsn-active {
     // plus a few px so the drop shadow doesn't smudge the top of the window.
     const tabsShift = navH + ghBarH + Math.max(stripH, blockH - offset) + 4;
 
+    // The badge stands to the left of the two text rows, so it needs its own
+    // width to indent them by, and a centre line over the rows only — not over
+    // the whole block, most of which is scrolled out of sight behind the nav.
+    if (stateBadge && stateBadge.isConnected) {
+      const badgeW = Math.round(stateBadge.getBoundingClientRect().width);
+      const rowsH = Math.round(tr.top - top);   // strip top down to the tab strip
+      const badgeMid = offset + Math.round(rowsH / 2);
+      if (badgeW !== geo.badgeW || badgeMid !== geo.badgeMid) {
+        geo.badgeW = badgeW;
+        geo.badgeMid = badgeMid;
+        setVar('--ghsn-badge-w', badgeW);
+        setVar('--ghsn-badge-mid', badgeMid);
+      }
+    }
+
     geo.offset = offset;
     if (stripH !== geo.stripH || tabsTop !== geo.tabsTop || tabsShift !== geo.tabsShift) {
       geo.stripH = stripH;
@@ -641,11 +712,12 @@ html.ghsn-active {
   };
 
   const standDown = () => {
-    root.classList.remove('ghsn-active', 'ghsn-pinned', 'ghsn-hidden', 'ghsn-tabs', 'ghsn-owntitle');
+    root.classList.remove('ghsn-active', 'ghsn-pinned', 'ghsn-hidden', 'ghsn-tabs',
+                          'ghsn-owntitle', 'ghsn-badgeleft');
     clearMarks();
     clearExtraOffsets();
     ro?.disconnect();
-    nav = wrapper = tabs = block = stateBadge = title = ghBar = null;
+    nav = wrapper = tabs = block = stateBadge = title = titleRow = stateRow = ghBar = null;
     hidden = false;
   };
 
@@ -716,6 +788,9 @@ html.ghsn-active {
     block?.classList.remove('ghsn-tabsblock');
     tabs?.classList.remove('ghsn-tabstrip');
     title?.classList.remove('ghsn-title');
+    titleRow?.classList.remove('ghsn-titlerow');
+    stateRow?.classList.remove('ghsn-staterow');
+    stateBadge?.classList.remove('ghsn-badge');
   };
 
   let ro = null;
@@ -732,7 +807,10 @@ html.ghsn-active {
     tabs = found;
     block = found ? climbToPageBlock(found) : null;
     title?.classList.remove('ghsn-title');
-    stateBadge = title = null;
+    titleRow?.classList.remove('ghsn-titlerow');
+    stateRow?.classList.remove('ghsn-staterow');
+    stateBadge?.classList.remove('ghsn-badge');
+    stateBadge = title = titleRow = stateRow = null;
 
     if (tabs && block && block !== tabs) {
       // Resolve the markers before marking the block: covering them may mean
@@ -751,9 +829,23 @@ html.ghsn-active {
         else title = null;
       }
 
+      // Rows are for styling only: the title's whole line gets shrunk, because
+      // the issue number sits beside the heading rather than inside it, and both
+      // lines get indented to clear the badge once it moves left.
+      titleRow = rowOf(title);
+      stateRow = rowOf(stateBadge);
+
       tabs.classList.add('ghsn-tabstrip');
       block.classList.add('ghsn-tabsblock');
       title?.classList.add('ghsn-title');
+      titleRow?.classList.add('ghsn-titlerow');
+      stateRow?.classList.add('ghsn-staterow');
+
+      // Standing the badge to the left needs all three: something to move, and
+      // both lines to indent so it has somewhere to stand.
+      const canMoveBadge = CONFIG.badgeLeft && !!stateBadge && !!stateRow && !!titleRow;
+      if (canMoveBadge) stateBadge.classList.add('ghsn-badge');
+      root.classList.toggle('ghsn-badgeleft', canMoveBadge);
       // Showing our own title makes GitHub's bar a duplicate, so the CSS fades
       // it out — and measureGhBar then reads it as zero height, which keeps the
       // geometry consistent without a second switch to keep in step.
@@ -765,9 +857,11 @@ html.ghsn-active {
 
       log('tabs', describe(tabs), '| block', describe(block),
           '| state badge', describe(stateBadge), '| title', describe(title));
+      log('title row', describe(titleRow), '| state row', describe(stateRow),
+          '| badge moved left', canMoveBadge);
     } else {
-      root.classList.remove('ghsn-owntitle');
-      tabs = block = stateBadge = title = null;
+      root.classList.remove('ghsn-owntitle', 'ghsn-badgeleft');
+      tabs = block = stateBadge = title = titleRow = stateRow = null;
       root.classList.remove('ghsn-tabs');
       setVar('--ghsn-tabs-h', 0);
       geo.stripH = 0;
@@ -812,7 +906,7 @@ html.ghsn-active {
     ro.observe(nav);
     ro.observe(wrapper);
 
-    tabs = block = stateBadge = title = null;
+    tabs = block = stateBadge = title = titleRow = stateRow = null;
     attachTabs();
 
     if (!measure()) {
