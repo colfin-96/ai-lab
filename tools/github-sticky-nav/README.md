@@ -111,6 +111,7 @@ version in this repo, edit `extension/sticky-nav.js` and regenerate — see
 | `includeStateRow` | `true` | `false` pins the tab strip without the state row above it — the Open/Merged badge and the "merged N commits into main" line — saving about 32px. |
 | `includeTitle` | `true` | `false` leaves the title out, and lets GitHub's own sticky bar through to show it instead. Size while pinned is the `--ghsn-title-size` CSS variable, 13px by default. |
 | `badgeLeft` | `true` | `false` leaves the Open/Merged badge inline at the start of the state row instead of standing it to the left of both lines. |
+| `hideTitleActions` | `true` | `false` keeps the title row's buttons — the Code button, the check summary, the edit pencil — visible while pinned. They set the row's height, so keeping them costs most of what the shrink saves. |
 | `pointerZone` | `8` | How close to the top edge (px) the pointer must get. |
 | `extraOffsetSelectors` | `[]` | CSS selectors for any *other* fixed bar that sits at `top: 0` and should be pushed down while the nav shows. |
 | `debug` | `false` | `true` logs what each attach found — nav, wrapper, tab strip, state badge, geometry — to the page console. Start here if the strip isn't picking something up. |
@@ -165,9 +166,15 @@ means working with rows we cannot reparent, so:
   the midpoint of the two lines, and stays in flow while doing it — absolute
   positioning would resolve against whichever ancestor happens to be positioned,
   which is not knowable from out here
-* the title row is indented by the badge's measured width plus
-  `--ghsn-badge-gap`. The state row needs no indent, since the badge is still in
-  flow there and its text already starts after it
+* both rows are indented by the badge's measured width plus `--ghsn-badge-gap`,
+  and the badge is pulled back into that indent by an equal negative margin. The
+  title and the "wants to merge" line then start at the same x by construction,
+  rather than by two numbers that have to agree
+* the title row's buttons are hidden, targeted by Primer's `data-component`
+  attributes rather than its hashed class names — the attributes are part of the
+  component contract, the classes are not
+* the title text is bolded, but not the issue number beside it, which GitHub
+  keeps muted and normal-weight
 * the title's whole row is shrunk, not just the heading, because the issue
   number sits beside it and carries its own font size. The Code button and check
   summary shrink too, which is deliberate: a row is only as short as its tallest

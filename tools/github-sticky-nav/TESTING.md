@@ -69,7 +69,8 @@ not attempted a fifth time the same way:
 | 1.7.0 | shrink the whole title row; stand the badge to the left of both lines | no visible change: the row lookup required a direct child of the block and so matched nothing |
 | 1.7.1 | climb to the outermost ancestor that excludes the tabs; lift the badge in flow | issue number shrank correctly, badge moved left but its top was clipped |
 | 1.7.2 | switch off clipping on the badge's row and the block | still wonky — the debug log showed why |
-| 1.7.3 | prefer the outermost of nested matches; never match an SVG | current |
+| 1.7.3 | prefer the outermost of nested matches; never match an SVG | badge correct at last; row still showed the Code button and check summary, title too light |
+| 1.8.0 | hide the title row's buttons, bold the title, align both rows off one indent | current |
 
 Working assumption: **GitHub's bar cannot be relied on while we pin the header.**
 It is the fallback for when the title cannot be found, not the primary path.
@@ -110,6 +111,11 @@ Two separate lessons from the same area, both worth keeping:
 | 30 | Issue number is small | `#123` is the same size as the title beside it | ⬜ |
 | 31 | Badge does not drift | Scroll, resize, and soft-navigate between PRs. The badge stays centred on the two rows rather than sliding off | ⬜ |
 | 32 | `badgeLeft: false` | Badge goes back inline at the start of the state row, rows lose their indent | ⬜ |
+| 33 | Buttons gone while pinned | No Code button, check summary or edit pencil in the pinned title row — and all of them back at the top of the page | ⬜ |
+| 34 | Rows share a left edge | The title and the "wants to merge" line start at exactly the same x | ⬜ |
+| 35 | Title reads as a title | Title bolder than the branch line beside it; `#123` still muted and normal weight | ⬜ |
+| 36 | Height actually dropped | The strip is noticeably shorter than 1.7.3, since the buttons were setting the row height | ⬜ |
+| 37 | `hideTitleActions: false` | Buttons come back while pinned | ⬜ |
 
 ### If something is not picked up
 

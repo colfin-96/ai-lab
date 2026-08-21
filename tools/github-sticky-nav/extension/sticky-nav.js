@@ -43,6 +43,10 @@
     // Lift the Open/Merged badge out of the state row and stand it to the left
     // of both lines, the way GitHub's own compact bar arranges them.
     badgeLeft: true,
+    // Hide the title row's buttons while pinned — the Code button, the check
+    // summary, the edit pencil. GitHub's own compact bar shows none of them, and
+    // they set the row's height, so hiding them is most of what makes it small.
+    hideTitleActions: true,
     // Extra selectors for other fixed bars that sit at top: 0 and should be
     // pushed down while the nav shows. Matching elements get .ghsn-offset.
     extraOffsetSelectors: [],
@@ -461,7 +465,7 @@
 
   const standDown = () => {
     root.classList.remove('ghsn-active', 'ghsn-pinned', 'ghsn-hidden', 'ghsn-tabs',
-                          'ghsn-owntitle', 'ghsn-badgeleft');
+                          'ghsn-owntitle', 'ghsn-badgeleft', 'ghsn-hideactions');
     clearMarks();
     clearExtraOffsets();
     ro?.disconnect();
@@ -599,6 +603,7 @@
       const canMoveBadge = CONFIG.badgeLeft && !!stateBadge && !!stateRow && !!titleRow;
       if (canMoveBadge) stateBadge.classList.add('ghsn-badge');
       root.classList.toggle('ghsn-badgeleft', canMoveBadge);
+      root.classList.toggle('ghsn-hideactions', CONFIG.hideTitleActions && !!titleRow);
       // Showing our own title makes GitHub's bar a duplicate, so the CSS fades
       // it out — and measureGhBar then reads it as zero height, which keeps the
       // geometry consistent without a second switch to keep in step.
@@ -613,7 +618,7 @@
       log('title row', describe(titleRow), '| state row', describe(stateRow),
           '| badge moved left', canMoveBadge);
     } else {
-      root.classList.remove('ghsn-owntitle', 'ghsn-badgeleft');
+      root.classList.remove('ghsn-owntitle', 'ghsn-badgeleft', 'ghsn-hideactions');
       tabs = block = stateBadge = title = titleRow = stateRow = null;
       root.classList.remove('ghsn-tabs');
       setVar('--ghsn-tabs-h', 0);

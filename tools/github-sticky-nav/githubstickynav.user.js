@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GitHub Sticky Repo Nav
 // @namespace    https://github.com/colfin-96/ai-lab
-// @version      1.7.3
+// @version      1.8.0
 // @description  Keeps GitHub's repo nav and the PR tab strip (Conversation / Commits / Checks / Files changed) reachable: they hide as you scroll down and slide back in the moment you scroll up.
 // @author       colfin-96
 // @match        https://github.com/*
@@ -180,14 +180,22 @@ html.ghsn-active.ghsn-pinned .ghsn-titlerow * {
  * whichever ancestor happens to be positioned, which is not something we can
  * know from out here; in flow, the offsets mean what they say. */
 
+/* Both rows are indented by the same amount and the badge is pulled back out
+ * into that indent by an equal negative margin. That way the badge starts at the
+ * left edge while the title and the "wants to merge" line begin at exactly the
+ * same x — aligning them by construction rather than by two numbers that have to
+ * agree. */
+
+html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-titlerow,
+html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-staterow {
+  padding-left: calc(var(--ghsn-badge-w) + var(--ghsn-badge-gap)) !important;
+}
+
 html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-badge {
   position: relative !important;
   top: calc(-0.5 * var(--ghsn-titlerow-h)) !important;
-  margin-right: var(--ghsn-badge-gap) !important;
-}
-
-html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-titlerow {
-  padding-left: calc(var(--ghsn-badge-w) + var(--ghsn-badge-gap)) !important;
+  margin-left: calc(-1 * (var(--ghsn-badge-w) + var(--ghsn-badge-gap))) !important;
+  margin-right: 0 !important;
 }
 
 /* Lifting the badge pushes it outside its row's box, so anything clipping on
@@ -207,6 +215,32 @@ html.ghsn-active.ghsn-pinned .ghsn-titlerow,
 html.ghsn-active.ghsn-pinned .ghsn-staterow {
   margin-top: 0 !important;
   margin-bottom: 0 !important;
+}
+
+/* ---- strip the title row's buttons while pinned --------------------- */
+/* The Code button, the check summary and the edit pencil are what set the title
+ * row's height, and GitHub's own compact bar shows none of them. Targeted by
+ * Primer's data-component attributes, with class fallbacks: the attributes are
+ * part of the component contract, the hashed classes are not. */
+
+html.ghsn-active.ghsn-pinned.ghsn-hideactions .ghsn-titlerow [data-component="PH_Actions"],
+html.ghsn-active.ghsn-pinned.ghsn-hideactions .ghsn-titlerow [data-component="PH_TrailingAction"],
+html.ghsn-active.ghsn-pinned.ghsn-hideactions .ghsn-titlerow [data-component="PH_LeadingAction"],
+html.ghsn-active.ghsn-pinned.ghsn-hideactions .ghsn-titlerow [class*="PageHeader-Actions"],
+html.ghsn-active.ghsn-pinned.ghsn-hideactions .ghsn-titlerow [class*="PageHeader-TrailingAction"],
+html.ghsn-active.ghsn-pinned.ghsn-hideactions .ghsn-titlerow [class*="PageHeader-LeadingAction"] {
+  display: none !important;
+}
+
+/* ---- the title reads as a title ------------------------------------ */
+/* Shrinking the whole row leaves the title the same weight as the branch line
+ * beside it. GitHub's compact bar bolds the title text only — not the issue
+ * number, which stays muted and normal — so the weight goes on the title span
+ * rather than the heading, which contains both. */
+
+html.ghsn-active.ghsn-pinned .ghsn-title .markdown-title,
+html.ghsn-active.ghsn-pinned .ghsn-title [class*="markdown-title"] {
+  font-weight: 600 !important;
 }
 
 /* ---- GitHub's own fixed sticky bars -------------------------------- */
@@ -332,6 +366,10 @@ html.ghsn-active {
     // Lift the Open/Merged badge out of the state row and stand it to the left
     // of both lines, the way GitHub's own compact bar arranges them.
     badgeLeft: true,
+    // Hide the title row's buttons while pinned — the Code button, the check
+    // summary, the edit pencil. GitHub's own compact bar shows none of them, and
+    // they set the row's height, so hiding them is most of what makes it small.
+    hideTitleActions: true,
     // Extra selectors for other fixed bars that sit at top: 0 and should be
     // pushed down while the nav shows. Matching elements get .ghsn-offset.
     extraOffsetSelectors: [],
@@ -750,7 +788,7 @@ html.ghsn-active {
 
   const standDown = () => {
     root.classList.remove('ghsn-active', 'ghsn-pinned', 'ghsn-hidden', 'ghsn-tabs',
-                          'ghsn-owntitle', 'ghsn-badgeleft');
+                          'ghsn-owntitle', 'ghsn-badgeleft', 'ghsn-hideactions');
     clearMarks();
     clearExtraOffsets();
     ro?.disconnect();
@@ -888,6 +926,7 @@ html.ghsn-active {
       const canMoveBadge = CONFIG.badgeLeft && !!stateBadge && !!stateRow && !!titleRow;
       if (canMoveBadge) stateBadge.classList.add('ghsn-badge');
       root.classList.toggle('ghsn-badgeleft', canMoveBadge);
+      root.classList.toggle('ghsn-hideactions', CONFIG.hideTitleActions && !!titleRow);
       // Showing our own title makes GitHub's bar a duplicate, so the CSS fades
       // it out — and measureGhBar then reads it as zero height, which keeps the
       // geometry consistent without a second switch to keep in step.
@@ -902,7 +941,7 @@ html.ghsn-active {
       log('title row', describe(titleRow), '| state row', describe(stateRow),
           '| badge moved left', canMoveBadge);
     } else {
-      root.classList.remove('ghsn-owntitle', 'ghsn-badgeleft');
+      root.classList.remove('ghsn-owntitle', 'ghsn-badgeleft', 'ghsn-hideactions');
       tabs = block = stateBadge = title = titleRow = stateRow = null;
       root.classList.remove('ghsn-tabs');
       setVar('--ghsn-tabs-h', 0);
