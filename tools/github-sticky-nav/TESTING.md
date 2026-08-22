@@ -75,7 +75,9 @@ not attempted a fifth time the same way:
 | 1.8.2 | climb from the title to the row, hiding sibling *controls* at each level | hid the wrong thing — the span holding #123 — and still missed the buttons, which are outside the title row entirely |
 | 1.8.3 | hide controls *within* siblings; climb to the block, not the row | buttons went, but their empty container stayed — and later-rendered buttons were never marked |
 | 1.8.4 | hide all-control containers whole; mark hosts so CSS catches new buttons | buttons gone for good, but the two lines still sat too far apart and the branch line was full size |
-| 1.9.0 | take the badge out of flow against the state row; shrink the state row too | current |
+| 1.9.0 | take the badge out of flow against the state row; shrink the state row too | gap shrank but did not close; subtitle sat 8px right of the title |
+| 1.9.1–1.9.4 | log the left edges, the vars as the CSS receives them, and the ancestor chain | measured the answer instead of guessing at it — see below |
+| 1.10.0 | hide the action area whole; indent the title to the state text's measured left edge | current |
 
 **Correction, from the 1.8.2 debug log.** The 1.5.0 diagnosis was wrong. GitHub's
 bar *does* mount and stick under our pinning — the log shows it resolving to
@@ -95,6 +97,17 @@ are showing our own title.
 
 Two separate lessons from the same area, both worth keeping:
 
+* **The header is a CSS grid, and an emptied item still sizes its track.** The
+  12px above and below each line was not spacing at all — `row-gap` was already
+  0. The grid tracks were 30px and 40px while the rows in them were 18px and
+  28px, and `align-items: center` split the slack. What sized those tracks was
+  the action area, which had been left as a host: its buttons were hidden but its
+  box was still there. Emptying a container is not the same as removing it, and
+  in a grid the difference is visible two rows away from the thing you changed.
+* Aligning two rows by giving them the same computed indent assumes nothing sits
+  in front of the text. On this header a wrapper did, worth 8px. Measuring where
+  the text actually starts and indenting the other row to *that* is one number
+  instead of two that have to agree.
 * An in-flow badge inside a flex column occupies a row of its own. Shifting it
   with `position: relative` moved the pill to the left but left its full height
   behind as blank space between the title and the branch line — which read as a

@@ -142,14 +142,24 @@ html.ghsn-active.ghsn-pinned .ghsn-titlerow * {
  * which is not knowable from out here — but the containing block is one we set
  * ourselves, on the state row, so the offsets below mean exactly what they say. */
 
-/* Both rows are indented by the badge's measured width plus the gap, and the
- * badge is placed at left: 0, which resolves to the row's padding edge. The
- * title and the "wants to merge" line then begin at exactly the same x by
- * construction, rather than by two numbers that have to agree. */
+/* The state row is indented by the badge's measured width plus the gap, and the
+ * badge is placed at left: 0, which resolves to the row's padding edge.
+ *
+ * The title is indented to wherever the state row's own text ended up
+ * (--ghsn-title-indent) rather than to the same computed width. Both rows start
+ * at the same left edge, so the two indents ought to match — but GitHub's markup
+ * puts a wrapper in front of that text with spacing of its own, which put the
+ * subtitle 8px to the right of the title. Aligning to the text itself needs one
+ * measurement and does not care what that wrapper does. Falls back to the
+ * computed width when the text can't be found. */
 
-html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-titlerow,
 html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-staterow {
   padding-left: calc(var(--ghsn-badge-w) + var(--ghsn-badge-gap)) !important;
+}
+
+html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-titlerow {
+  padding-left: var(--ghsn-title-indent,
+                    calc(var(--ghsn-badge-w) + var(--ghsn-badge-gap))) !important;
 }
 
 html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-staterow {
@@ -240,6 +250,17 @@ html.ghsn-active.ghsn-pinned .ghsn-extra {
 /* A host keeps its text and loses its controls. Written as a descendant rule
  * rather than by marking each button, so a button React adds after we looked is
  * hidden too — and it does add them. */
+
+/* A host keeps its text, so it keeps a box — and that box must not go on setting
+ * the height of whatever row or grid track it sits in. */
+
+html.ghsn-active.ghsn-pinned .ghsn-extrahost {
+  min-height: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
 
 html.ghsn-active.ghsn-pinned .ghsn-extrahost button,
 html.ghsn-active.ghsn-pinned .ghsn-extrahost [class*="Button"],

@@ -176,23 +176,29 @@ means working with rows we cannot reparent, so:
   rows can reach. Those ancestors are marked too, up to but not including the
   pinned block — that one also holds the tab strip, and the space below the state
   row is the tabs' own
-* both rows are indented by the badge's measured width plus `--ghsn-badge-gap`,
-  and the badge sits at `left: 0`, which resolves to the row's padding edge. The
-  title and the "wants to merge" line then start at the same x by construction,
-  rather than by two numbers that have to agree
+* the state row is indented by the badge's measured width plus `--ghsn-badge-gap`,
+  and the badge sits at `left: 0`, which resolves to the row's padding edge
+* the title is indented to wherever the state row's own text ended up, not to the
+  same computed width. Both rows start at the same left edge, so the two ought to
+  agree — but GitHub wraps that text in a container with spacing of its own, which
+  left the subtitle 8px to the right of the title. Aligning to the text itself is
+  one measurement and doesn't care what the wrapper does
 * the "wants to merge N commits into `main`" line is shrunk to the title's size,
   and the badge deliberately isn't — GitHub keeps it full size, and its width is
   what the indent is measured from
 * the buttons are hidden by structure, not by name: the script climbs from the
-  title out to the pinned block and marks the siblings it passes. A sibling that
-  holds nothing but controls is hidden whole — leaving it would leave an empty
-  padded box still occupying the height. One that also carries wanted text, such
-  as the span holding both `#123` and the edit pencil, is marked as a host, and a
-  CSS rule hides the controls inside it. Marking the host rather than each button
-  matters, because the header re-renders and adds buttons after we have looked.
-  The check summary and the Code button live outside the title row altogether,
-  which is why the climb goes as far as the block. Naming Primer's slots was tried
-  first and matched nothing
+  title out to the pinned block and marks the siblings it passes. Only siblings
+  *inside* the title row can survive as hosts — one carrying wanted text, such as
+  the span holding both `#123` and the edit pencil, keeps its text and loses its
+  controls. Further out there is nothing to keep, since the state row, the badge
+  and the tab strip are skipped before that point, so the action area goes whole.
+  That distinction is not cosmetic: the header is a CSS grid, and an item that is
+  present but emptied still sizes its track, which put 12px of slack above and
+  below both lines. Marking a host rather than each button matters too, because
+  the header re-renders and adds buttons after we have looked. The check summary
+  and the Code button live outside the title row altogether, which is why the
+  climb goes as far as the block. Naming Primer's slots was tried first and
+  matched nothing
 * the title text is bolded, but not the issue number beside it, which GitHub
   keeps muted and normal-weight
 * the title's whole row is shrunk, not just the heading, because the issue

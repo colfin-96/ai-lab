@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GitHub Sticky Repo Nav
 // @namespace    https://github.com/colfin-96/ai-lab
-// @version      1.9.4
+// @version      1.10.0
 // @description  Keeps GitHub's repo nav and the PR tab strip (Conversation / Commits / Checks / Files changed) reachable: they hide as you scroll down and slide back in the moment you scroll up.
 // @author       colfin-96
 // @match        https://github.com/*
@@ -184,14 +184,24 @@ html.ghsn-active.ghsn-pinned .ghsn-titlerow * {
  * which is not knowable from out here — but the containing block is one we set
  * ourselves, on the state row, so the offsets below mean exactly what they say. */
 
-/* Both rows are indented by the badge's measured width plus the gap, and the
- * badge is placed at left: 0, which resolves to the row's padding edge. The
- * title and the "wants to merge" line then begin at exactly the same x by
- * construction, rather than by two numbers that have to agree. */
+/* The state row is indented by the badge's measured width plus the gap, and the
+ * badge is placed at left: 0, which resolves to the row's padding edge.
+ *
+ * The title is indented to wherever the state row's own text ended up
+ * (--ghsn-title-indent) rather than to the same computed width. Both rows start
+ * at the same left edge, so the two indents ought to match — but GitHub's markup
+ * puts a wrapper in front of that text with spacing of its own, which put the
+ * subtitle 8px to the right of the title. Aligning to the text itself needs one
+ * measurement and does not care what that wrapper does. Falls back to the
+ * computed width when the text can't be found. */
 
-html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-titlerow,
 html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-staterow {
   padding-left: calc(var(--ghsn-badge-w) + var(--ghsn-badge-gap)) !important;
+}
+
+html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-titlerow {
+  padding-left: var(--ghsn-title-indent,
+                    calc(var(--ghsn-badge-w) + var(--ghsn-badge-gap))) !important;
 }
 
 html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-staterow {
@@ -282,6 +292,17 @@ html.ghsn-active.ghsn-pinned .ghsn-extra {
 /* A host keeps its text and loses its controls. Written as a descendant rule
  * rather than by marking each button, so a button React adds after we looked is
  * hidden too — and it does add them. */
+
+/* A host keeps its text, so it keeps a box — and that box must not go on setting
+ * the height of whatever row or grid track it sits in. */
+
+html.ghsn-active.ghsn-pinned .ghsn-extrahost {
+  min-height: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
 
 html.ghsn-active.ghsn-pinned .ghsn-extrahost button,
 html.ghsn-active.ghsn-pinned .ghsn-extrahost [class*="Button"],
@@ -498,6 +519,7 @@ html.ghsn-active {
   let title = null;      // PR/issue title, when we are keeping it on screen
   let titleRow = null;   // the row it sits in, so the whole line can be shrunk
   let stateRow = null;   // the row the badge sits in
+  let stateText = null;  // the "wants to merge …" line, to align the title with
   let extras = [];       // title-row children we hide while pinned
   let rowHosts = [];     // ancestors of the two rows, for the gap between them
   let ghBar = null;      // GitHub's own sticky header, once it turns up
@@ -507,7 +529,7 @@ html.ghsn-active {
   // offset is where that strip starts inside the block — the point that should
   // land at navH once pinned, which is also what the fail-safe checks.
   const geo = { navH: 0, wrapH: 0, stripH: 0, offset: 0, ghBarH: 0, badgeW: 0,
-                titleRowH: 0, stateRowH: 0, tabsTop: 0, tabsShift: 0 };
+                titleRowH: 0, stateRowH: 0, titleIndent: -1, tabsTop: 0, tabsShift: 0 };
 
   let lastY = 0;
   let hidden = false;
@@ -651,16 +673,23 @@ html.ghsn-active {
 
   // Mark a sibling of the title's ancestry so the CSS can deal with it.
   //
-  // Two outcomes: a container that is all controls goes entirely, and one that
-  // also carries text we want — the span holding both #123 and the edit pencil —
-  // becomes a host whose controls the CSS hides, keeping the text.
+  // Two outcomes: something we want gone entirely gets .ghsn-extra, and a
+  // container that also carries text we want to keep — the span holding both #123
+  // and the edit pencil — becomes a host whose controls the CSS hides.
   //
-  // The distinction matters for more than tidiness: marking a host rather than
-  // the individual buttons means the rule keeps working when React adds another
-  // button later, which it does.
-  const markSibling = (el) => {
+  // Only siblings *inside* the title row can be hosts. Further out there is
+  // nothing left to keep: the state row, the badge and the tab strip are all
+  // skipped before we get here, so anything else is the action area. Leaving one
+  // of those as a host was a real bug rather than a cosmetic one — the header is
+  // a grid, and a hidden-but-present item still sizes its track, which put 12px
+  // of slack above and below both lines.
+  //
+  // Marking a host rather than the individual buttons means the rule keeps
+  // working when React adds another button later, which it does.
+  const markSibling = (el, insideTitleRow) => {
     if (!el.matches(CONTROL_SELECTOR) && !el.querySelector(CONTROL_SELECTOR)) return;
-    el.classList.add(el.matches(CONTROL_SELECTOR) || onlyControls(el) ? 'ghsn-extra' : 'ghsn-extrahost');
+    const whole = !insideTitleRow || el.matches(CONTROL_SELECTOR) || onlyControls(el);
+    el.classList.add(whole ? 'ghsn-extra' : 'ghsn-extrahost');
     extras.push(el);
   };
 
@@ -689,7 +718,7 @@ html.ghsn-active {
         if (sib === tabs || sib.contains(tabs)) continue;
         if (stateRow && (sib === stateRow || sib.contains(stateRow))) continue;
         if (stateBadge && (sib === stateBadge || sib.contains(stateBadge))) continue;
-        markSibling(sib);
+        markSibling(sib, !!titleRow && titleRow.contains(node) && node !== titleRow);
       }
       node = parent;
     }
@@ -880,6 +909,24 @@ html.ghsn-active {
       }
     }
 
+    // The title is indented to wherever GitHub's own "wants to merge" text
+    // starts, rather than to a width computed from the badge. Both rows sit at
+    // the same left edge and the state text is already positioned by GitHub's
+    // own markup, so aligning to the thing itself needs one measurement and
+    // survives whatever padding or gap that markup puts in front of it.
+    // Without it, the CSS falls back to the badge's width plus the gap.
+    if (stateText && stateText.isConnected && titleRow && titleRow.isConnected) {
+      const indent = Math.round(stateText.getBoundingClientRect().left
+                                - titleRow.getBoundingClientRect().left);
+      if (indent >= 0 && indent !== geo.titleIndent) {
+        geo.titleIndent = indent;
+        setVar('--ghsn-title-indent', indent);
+      }
+    } else if (geo.titleIndent !== -1) {
+      geo.titleIndent = -1;
+      root.style.removeProperty('--ghsn-title-indent');
+    }
+
     geo.offset = offset;
     if (stripH !== geo.stripH || tabsTop !== geo.tabsTop || tabsShift !== geo.tabsShift) {
       geo.stripH = stripH;
@@ -932,28 +979,12 @@ html.ghsn-active {
       const c = getComputedStyle(el);
       return { pl: c.paddingLeft, ml: c.marginLeft, gap: c.gap, disp: c.display, pos: c.position };
     };
-    // The state row's text line. Not a sibling of the badge: the two share a
-    // flex-row wrapper, so this has to descend through whatever holds the badge
-    // rather than skip it.
-    const findStateText = (el) => {
-      if (!el) return null;
-      for (const c of el.children) {
-        if (!(c instanceof HTMLElement)) continue;
-        if (c === stateBadge || c.contains(stateBadge)) {
-          const deeper = findStateText(c);
-          if (deeper) return deeper;
-          continue;
-        }
-        if (c.textContent.trim()) return c;
-      }
-      return null;
-    };
-    const stateText = findStateText(stateRow);
     // What the CSS is actually being handed, as opposed to what was measured —
     // a var that never updated is invisible from the geo object alone.
     const rootCss = getComputedStyle(root);
     const vars = {};
-    for (const name of ['--ghsn-titlerow-h', '--ghsn-staterow-h', '--ghsn-badge-w', '--ghsn-badge-gap']) {
+    for (const name of ['--ghsn-titlerow-h', '--ghsn-staterow-h', '--ghsn-badge-w',
+                        '--ghsn-badge-gap', '--ghsn-title-indent']) {
       vars[name.replace('--ghsn-', '')] = rootCss.getPropertyValue(name).trim();
     }
     // Every ancestor between the rows and the pinned block, with the spacing it
@@ -1011,7 +1042,7 @@ html.ghsn-active {
     clearMarks();
     clearExtraOffsets();
     ro?.disconnect();
-    nav = wrapper = tabs = block = stateBadge = title = titleRow = stateRow = ghBar = null;
+    nav = wrapper = tabs = block = stateBadge = title = titleRow = stateRow = stateText = ghBar = null;
     hidden = false;
   };
 
@@ -1075,6 +1106,24 @@ html.ghsn-active {
   // pushed down.
   const clearExtraOffsets = () => {
     document.querySelectorAll('.ghsn-offset').forEach((el) => el.classList.remove('ghsn-offset'));
+  };
+
+  // The "wants to merge N commits into main" line, which the title is aligned
+  // with. Not a sibling of the badge — the two share a flex-row wrapper — so this
+  // descends through whatever holds the badge rather than skipping it, and takes
+  // the first thing carrying text.
+  const findStateText = (el) => {
+    if (!el) return null;
+    for (const c of el.children) {
+      if (!(c instanceof HTMLElement)) continue;
+      if (stateBadge && (c === stateBadge || c.contains(stateBadge))) {
+        const deeper = findStateText(c);
+        if (deeper) return deeper;
+        continue;
+      }
+      if (c.textContent.trim()) return c;
+    }
+    return null;
   };
 
   // The space between the title and the "wants to merge" line is not always the
@@ -1142,7 +1191,7 @@ html.ghsn-active {
     titleRow?.classList.remove('ghsn-titlerow');
     stateRow?.classList.remove('ghsn-staterow');
     stateBadge?.classList.remove('ghsn-badge');
-    stateBadge = title = titleRow = stateRow = null;
+    stateBadge = title = titleRow = stateRow = stateText = null;
 
     if (tabs && block && block !== tabs) {
       // Resolve the markers before marking the block: covering them may mean
@@ -1166,6 +1215,7 @@ html.ghsn-active {
       // lines get indented to clear the badge once it moves left.
       titleRow = rowOf(title);
       stateRow = rowOf(stateBadge);
+      stateText = findStateText(stateRow);
 
       tabs.classList.add('ghsn-tabstrip');
       block.classList.add('ghsn-tabsblock');
