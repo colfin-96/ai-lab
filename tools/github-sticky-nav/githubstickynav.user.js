@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GitHub Sticky Repo Nav
 // @namespace    https://github.com/colfin-96/ai-lab
-// @version      1.9.1
+// @version      1.9.2
 // @description  Keeps GitHub's repo nav and the PR tab strip (Conversation / Commits / Checks / Files changed) reachable: they hide as you scroll down and slide back in the moment you scroll up.
 // @author       colfin-96
 // @match        https://github.com/*
@@ -427,8 +427,9 @@ html.ghsn-active {
     // pushed down while the nav shows. Matching elements get .ghsn-offset.
     extraOffsetSelectors: [],
     // Log what was found on each attach to the page console. Useful when the
-    // strip is not picking up something you expected it to.
-    debug: false,
+    // strip is not picking up something you expected it to. On while the header
+    // layout is still being worked out — set it to false for a quiet console.
+    debug: true,
   };
 
   const NAV_SELECTORS = [

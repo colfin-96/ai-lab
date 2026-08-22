@@ -51,8 +51,9 @@
     // pushed down while the nav shows. Matching elements get .ghsn-offset.
     extraOffsetSelectors: [],
     // Log what was found on each attach to the page console. Useful when the
-    // strip is not picking up something you expected it to.
-    debug: false,
+    // strip is not picking up something you expected it to. On while the header
+    // layout is still being worked out — set it to false for a quiet console.
+    debug: true,
   };
 
   const NAV_SELECTORS = [
