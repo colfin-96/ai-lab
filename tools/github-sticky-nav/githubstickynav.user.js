@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GitHub Sticky Repo Nav
 // @namespace    https://github.com/colfin-96/ai-lab
-// @version      1.9.3
+// @version      1.9.4
 // @description  Keeps GitHub's repo nav and the PR tab strip (Conversation / Commits / Checks / Files changed) reachable: they hide as you scroll down and slide back in the moment you scroll up.
 // @author       colfin-96
 // @match        https://github.com/*
@@ -963,7 +963,9 @@ html.ghsn-active {
       const c = getComputedStyle(node);
       chain.push(`${describe(node)} {disp:${c.display} gap:${c.gap} pt:${c.paddingTop} pb:${c.paddingBottom}}`);
     }
-    log('align', {
+    // Stringified, not handed over as an object: the console collapses a nested
+    // object to {…} and the whole point is a dump that can be pasted.
+    log('align', JSON.stringify({
       vars,
       titleRow: box(titleRow), titleRowCss: space(titleRow),
       title: box(title), titleCss: space(title),
@@ -974,7 +976,7 @@ html.ghsn-active {
       badgeParent: describe(stateBadge?.parentElement),
       badgeOffsetParent: describe(stateBadge?.offsetParent),
       chain,
-    });
+    }, null, 2));
   };
 
   // Confirm the strips actually landed where the geometry said they would. If

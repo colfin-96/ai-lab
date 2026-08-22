@@ -573,7 +573,9 @@
       const c = getComputedStyle(node);
       chain.push(`${describe(node)} {disp:${c.display} gap:${c.gap} pt:${c.paddingTop} pb:${c.paddingBottom}}`);
     }
-    log('align', {
+    // Stringified, not handed over as an object: the console collapses a nested
+    // object to {…} and the whole point is a dump that can be pasted.
+    log('align', JSON.stringify({
       vars,
       titleRow: box(titleRow), titleRowCss: space(titleRow),
       title: box(title), titleCss: space(title),
@@ -584,7 +586,7 @@
       badgeParent: describe(stateBadge?.parentElement),
       badgeOffsetParent: describe(stateBadge?.offsetParent),
       chain,
-    });
+    }, null, 2));
   };
 
   // Confirm the strips actually landed where the geometry said they would. If
