@@ -63,7 +63,7 @@ not attempted a fifth time the same way:
 |---|---|---|
 | 1.4.0 | pin our own shrunken title | worked, but looked redundant — reverted |
 | 1.4.1 | no title, rely on GitHub's bar | title absent in Chrome: our own CSS was fading GitHub's bar out |
-| 1.5.0 | stop fading it, stack below it | still absent — under our pinning GitHub never reveals its bar at all, because the real title never leaves the viewport |
+| 1.5.0 | stop fading it, stack below it | still absent at the time; the diagnosis was wrong — see the correction below |
 | 1.6.0 | pin our own title again, fade GitHub's bar only while ours is showing | title appeared, but at full size and wrapping |
 | 1.6.1 | shrink the title's descendants too, not just the heading | title shrank, but #123 beside it did not — it is a sibling, not a child |
 | 1.7.0 | shrink the whole title row; stand the badge to the left of both lines | no visible change: the row lookup required a direct child of the block and so matched nothing |
@@ -72,10 +72,24 @@ not attempted a fifth time the same way:
 | 1.7.3 | prefer the outermost of nested matches; never match an SVG | badge correct at last; row still showed the Code button and check summary, title too light |
 | 1.8.0 | hide the title row's buttons by naming Primer's slots | buttons stayed: the slot names guessed at did not match |
 | 1.8.1 | hide them structurally — any child of the row not containing the heading | hid nothing: the row has one child wrapping title, pencil and buttons together |
-| 1.8.2 | climb from the title to the row, hiding sibling *controls* at each level | current |
+| 1.8.2 | climb from the title to the row, hiding sibling *controls* at each level | hid the wrong thing — the span holding #123 — and still missed the buttons, which are outside the title row entirely |
+| 1.8.3 | hide controls *within* siblings; climb to the block, not the row | current |
 
-Working assumption: **GitHub's bar cannot be relied on while we pin the header.**
-It is the fallback for when the title cannot be found, not the primary path.
+**Correction, from the 1.8.2 debug log.** The 1.5.0 diagnosis was wrong. GitHub's
+bar *does* mount and stick under our pinning — the log shows it resolving to
+`use-sticky-header-module__stickyHeader … is-stuck` at 70px high. It was absent
+from the screenshots because our own CSS fades it whenever we show the title
+ourselves, which is exactly what it is meant to do.
+
+So Route A was viable, and the reason given for abandoning it was not real. The
+current arrangement is kept because it gives control over the layout rather than
+because GitHub's bar is unusable. Anyone revisiting this should know the choice is
+open, not foreclosed.
+
+That measured 70px also exposed a bug fixed in 1.8.3: the fade is a transition, so
+measuring mid-fade read a real height for something on its way to invisible, and
+the tab strip lurched down and back. The height is now forced to zero whenever we
+are showing our own title.
 
 Two separate lessons from the same area, both worth keeping:
 
@@ -83,13 +97,17 @@ Two separate lessons from the same area, both worth keeping:
   elements, and the issue number sits *beside* it rather than inside — so
   shrinking the heading, or even its descendants, leaves `#123` full size. The
   shrink has to cover the whole row.
+* The action buttons are not in the title row. The check summary and the Code
+  button are siblings of `PageHeader-TitleArea`, one level further out, so any
+  walk bounded by the title row misses them. Climb to the pinned block.
+* Hide the controls *inside* a sibling, not the sibling. `#123` lives in a
+  `titleSuffix` span that also holds the edit pencil; hiding the span because it
+  contains a button takes the issue number with it.
 * The title row is not flat. On this header it holds a single
   `PullRequestHeader-module__titleWithAction` wrapper containing the heading, the
   edit pencil and the action buttons together, so any rule of the form "children
   of the row" finds one child and stops. Climb from the marker outwards instead
   and act at every level.
-* Hide *controls*, not siblings. The issue number sits beside the heading on some
-  headers, so "hide everything that is not the title" takes `#123` with it.
 * Prefer structure over names for anything Primer renders. Slot names were
   guessed at twice and matched nothing; "a child of this row that does not
   contain the heading" needs no name and cannot rot. The debug log prints the

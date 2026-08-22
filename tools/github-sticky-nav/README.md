@@ -170,10 +170,13 @@ means working with rows we cannot reparent, so:
   and the badge is pulled back into that indent by an equal negative margin. The
   title and the "wants to merge" line then start at the same x by construction,
   rather than by two numbers that have to agree
-* the title row's buttons are hidden by structure, not by name: the script climbs
-  from the title out to the row and hides the sibling *controls* it passes —
-  buttons, and anything wrapping one. Only controls, so the issue number beside
-  the heading survives. Naming Primer's slots was tried first and matched nothing
+* the buttons are hidden by structure, not by name: the script climbs from the
+  title out to the pinned block and, at each level, hides the controls found in
+  the siblings it passes. It hides the controls *within* a sibling rather than the
+  sibling itself, because the issue number shares a span with the edit pencil.
+  The check summary and the Code button live outside the title row altogether,
+  which is why the climb goes as far as the block. Naming Primer's slots was tried
+  first and matched nothing
 * the title text is bolded, but not the issue number beside it, which GitHub
   keeps muted and normal-weight
 * the title's whole row is shrunk, not just the heading, because the issue
@@ -204,11 +207,13 @@ counting a hidden one would leave a dead band above the tab strip. Transparent,
 `visibility: hidden`, `display: none`, or slid back above the nav all measure as
 zero.
 
-It also mounts long after our own setup runs — if it mounts at all, which under
-our pinning it may not, since GitHub only reveals it once it decides the real
-title has left the viewport. So we keep looking, at most every 400ms; unthrottled,
-a page where it never appears would run several `querySelector` calls on every
-scroll frame.
+It also mounts long after our own setup runs, so we keep looking, at most every
+400ms; unthrottled, a page where it never appears would run several
+`querySelector` calls on every scroll frame.
+
+While we are showing the title ourselves the height is forced to zero rather than
+measured. The fade is a transition, and measuring mid-fade reads a real height for
+something on its way to invisible — which made the tab strip lurch down and back.
 
 Set `debug: true` to see what it resolved to and what height it measured.
 

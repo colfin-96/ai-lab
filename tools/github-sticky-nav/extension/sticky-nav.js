@@ -244,8 +244,20 @@
   // pencil. Anything that is a button or wraps one.
   const CONTROL_SELECTOR = 'button, [class*="Button"], [data-component="IconButton"], [data-component="Button"]';
 
-  const isControl = (el) =>
-    el.matches(CONTROL_SELECTOR) || !!el.querySelector(CONTROL_SELECTOR);
+  // Hide the controls in a subtree, not the subtree. The issue number lives in a
+  // span that also holds the edit pencil, so hiding the span because it contains
+  // a button takes #123 down with it.
+  const hideControlsIn = (el) => {
+    if (el.matches(CONTROL_SELECTOR)) {
+      el.classList.add('ghsn-extra');
+      extras.push(el);
+      return;
+    }
+    for (const control of el.querySelectorAll(CONTROL_SELECTOR)) {
+      control.classList.add('ghsn-extra');
+      extras.push(control);
+    }
+  };
 
   // Hide the title row's controls, keeping the title and the issue number.
   //
@@ -258,28 +270,26 @@
   // some headers, and hiding every sibling would take it with them.
   const markExtras = () => {
     clearExtras();
-    if (!CONFIG.hideTitleActions || !titleRow || !title) return;
+    if (!CONFIG.hideTitleActions || !title || !block) return;
 
-    const kept = [];
+    // Climb all the way to the pinned block, not just to the title's own row.
+    // The check summary and the Code button are not in the title row at all —
+    // they are siblings of it, one level further out.
     let node = title;
-    for (let i = 0; i < MAX_CLIMB && node && node !== titleRow; i++) {
+    for (let i = 0; i < MAX_CLIMB && node && node !== block; i++) {
       const parent = node.parentElement;
       if (!parent) break;
       for (const sib of parent.children) {
         if (sib === node) continue;
-        // Keep whatever holds the badge: that is the one thing we do want.
+        if (sib === tabs || sib.contains(tabs)) continue;
+        if (stateRow && (sib === stateRow || sib.contains(stateRow))) continue;
         if (stateBadge && (sib === stateBadge || sib.contains(stateBadge))) continue;
-        if (!isControl(sib)) { kept.push(describe(sib)); continue; }
-        sib.classList.add('ghsn-extra');
-        extras.push(sib);
+        hideControlsIn(sib);
       }
       node = parent;
     }
 
-    log('hid', extras.length, 'control(s):', extras.map(describe).join(' | ') || 'none',
-        '// kept:', kept.join(' | ') || 'none',
-        '// controls inside the title itself:',
-        [...title.querySelectorAll(CONTROL_SELECTOR)].map(describe).join(' | ') || 'none');
+    log('hid', extras.length, 'control(s):', extras.map(describe).join(' | ') || 'none');
   };
 
   // The row a marker belongs to: the child of the pinned block that contains it.
@@ -350,6 +360,11 @@
   // in and out, so a measurable box is not proof that anything is visible — and
   // counting a hidden bar would leave a gap above our tab strip.
   const measureGhBar = () => {
+    // While we show the title ourselves the CSS fades GitHub's bar out. The fade
+    // is a transition, so measuring during it reads a real height for something
+    // on its way to invisible, and the tab strip lurches down and back.
+    if (root.classList.contains('ghsn-owntitle')) return 0;
+
     resolveGhBar();
     if (!ghBar || !ghBar.isConnected) return 0;
 
