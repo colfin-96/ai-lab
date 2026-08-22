@@ -50,6 +50,10 @@
     // Extra selectors for other fixed bars that sit at top: 0 and should be
     // pushed down while the nav shows. Matching elements get .ghsn-offset.
     extraOffsetSelectors: [],
+    // Breathing room above the top line of the pinned strip, in px. Limited by
+    // how much room the block actually has above that line — asking for more
+    // than it has just starts the strip at the block's own top edge.
+    stripPad: 14,
     // Log what was found on each attach to the page console. Useful when the
     // strip is not picking up something you expected it to. On while the header
     // layout is still being worked out — set it to false for a quiet console.
@@ -149,7 +153,6 @@
   const SLIDE_SETTLE = 250;
 
   // Headroom kept above the state badge so its row is not sheared off at the top.
-  const STATE_PAD = 8;
 
   const log = (...args) => { if (CONFIG.debug) console.log('[ghsn]', ...args); };
 
@@ -454,7 +457,7 @@
     for (const marker of [stateBadge, title]) {
       if (!marker || !marker.isConnected) continue;
       const mr = marker.getBoundingClientRect();
-      if (mr.height > 0 && mr.top < top) top = Math.max(br.top, mr.top - STATE_PAD);
+      if (mr.height > 0 && mr.top < top) top = Math.max(br.top, mr.top - CONFIG.stripPad);
     }
     const stripH = Math.round(tr.bottom - top);
     const offset = Math.round(top - br.top);      // strip's position in the block
@@ -894,6 +897,10 @@
     }
 
     root.classList.add('ghsn-active');
+    // The CSS pads the block by the same amount the strip's top edge is lifted
+    // by, so the room asked for is room that exists. Set from CONFIG rather than
+    // duplicated in the stylesheet, so the two cannot disagree.
+    setVar('--ghsn-strip-pad', CONFIG.stripPad);
     lastY = Math.max(0, window.scrollY);
     hidden = false;
     root.classList.remove('ghsn-hidden');

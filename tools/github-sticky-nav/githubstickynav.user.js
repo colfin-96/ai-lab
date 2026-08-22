@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GitHub Sticky Repo Nav
 // @namespace    https://github.com/colfin-96/ai-lab
-// @version      1.10.0
+// @version      1.10.1
 // @description  Keeps GitHub's repo nav and the PR tab strip (Conversation / Commits / Checks / Files changed) reachable: they hide as you scroll down and slide back in the moment you scroll up.
 // @author       colfin-96
 // @match        https://github.com/*
@@ -69,6 +69,7 @@
   --ghsn-titlerow-h: 0px;  /* title row height, part of the badge's centring  */
   --ghsn-staterow-h: 0px;  /* state row height, the other part                */
   --ghsn-badge-gap: 12px;  /* space between the badge and the text            */
+  --ghsn-strip-pad: 14px;  /* breathing room above the strip's top line        */
   --ghsn-dur: 160ms;       /* slide / fade duration                           */
 }
 
@@ -121,6 +122,16 @@ html.ghsn-active.ghsn-pinned .ghsn-tabstrip {
 
 html.ghsn-active.ghsn-pinned.ghsn-tabs .ghsn-tabsblock {
   background-color: var(--bgColor-default, var(--color-canvas-default, #ffffff)) !important;
+}
+
+/* The strip's top edge is lifted a little above its top line so the line has
+ * room to breathe under the nav. That room has to exist inside the block, or the
+ * lift is clamped at the block's own top edge — GitHub leaves about 13px there,
+ * which is less than we want. The padding sits above the strip's top edge, so it
+ * is never seen; it only makes the lift possible. */
+
+html.ghsn-active.ghsn-pinned.ghsn-tabs .ghsn-tabsblock {
+  padding-top: var(--ghsn-strip-pad) !important;
 }
 
 html.ghsn-active.ghsn-pinned .ghsn-nav {
@@ -461,6 +472,10 @@ html.ghsn-active {
     // Extra selectors for other fixed bars that sit at top: 0 and should be
     // pushed down while the nav shows. Matching elements get .ghsn-offset.
     extraOffsetSelectors: [],
+    // Breathing room above the top line of the pinned strip, in px. Limited by
+    // how much room the block actually has above that line — asking for more
+    // than it has just starts the strip at the block's own top edge.
+    stripPad: 14,
     // Log what was found on each attach to the page console. Useful when the
     // strip is not picking up something you expected it to. On while the header
     // layout is still being worked out — set it to false for a quiet console.
@@ -560,7 +575,6 @@ html.ghsn-active {
   const SLIDE_SETTLE = 250;
 
   // Headroom kept above the state badge so its row is not sheared off at the top.
-  const STATE_PAD = 8;
 
   const log = (...args) => { if (CONFIG.debug) console.log('[ghsn]', ...args); };
 
@@ -865,7 +879,7 @@ html.ghsn-active {
     for (const marker of [stateBadge, title]) {
       if (!marker || !marker.isConnected) continue;
       const mr = marker.getBoundingClientRect();
-      if (mr.height > 0 && mr.top < top) top = Math.max(br.top, mr.top - STATE_PAD);
+      if (mr.height > 0 && mr.top < top) top = Math.max(br.top, mr.top - CONFIG.stripPad);
     }
     const stripH = Math.round(tr.bottom - top);
     const offset = Math.round(top - br.top);      // strip's position in the block
@@ -1305,6 +1319,10 @@ html.ghsn-active {
     }
 
     root.classList.add('ghsn-active');
+    // The CSS pads the block by the same amount the strip's top edge is lifted
+    // by, so the room asked for is room that exists. Set from CONFIG rather than
+    // duplicated in the stylesheet, so the two cannot disagree.
+    setVar('--ghsn-strip-pad', CONFIG.stripPad);
     lastY = Math.max(0, window.scrollY);
     hidden = false;
     root.classList.remove('ghsn-hidden');

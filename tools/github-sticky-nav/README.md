@@ -112,6 +112,7 @@ version in this repo, edit `extension/sticky-nav.js` and regenerate — see
 | `includeTitle` | `true` | `false` leaves the title out, and lets GitHub's own sticky bar through to show it instead. Size while pinned is the `--ghsn-title-size` CSS variable, 13px by default. |
 | `badgeLeft` | `true` | `false` leaves the Open/Merged badge inline at the start of the state row instead of standing it to the left of both lines. |
 | `hideTitleActions` | `true` | `false` keeps the title row's buttons — the Code button, the check summary, the edit pencil — visible while pinned. They set the row's height, so keeping them costs most of what the shrink saves. |
+| `stripPad` | `14` | Breathing room in px above the strip's top line — the title, or the badge when `includeTitle` is off. The block is padded by the same amount while pinned so the room exists; GitHub's own header leaves only about 13px there. |
 | `pointerZone` | `8` | How close to the top edge (px) the pointer must get. |
 | `extraOffsetSelectors` | `[]` | CSS selectors for any *other* fixed bar that sits at `top: 0` and should be pushed down while the nav shows. |
 | `debug` | `true` | Logs what each attach found — nav, wrapper, tab strip, state badge, geometry, and where the title and badge landed — to the page console. On by default while the header layout is still being worked on; `false` for a quiet console. |

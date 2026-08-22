@@ -27,6 +27,7 @@
   --ghsn-titlerow-h: 0px;  /* title row height, part of the badge's centring  */
   --ghsn-staterow-h: 0px;  /* state row height, the other part                */
   --ghsn-badge-gap: 12px;  /* space between the badge and the text            */
+  --ghsn-strip-pad: 14px;  /* breathing room above the strip's top line        */
   --ghsn-dur: 160ms;       /* slide / fade duration                           */
 }
 
@@ -79,6 +80,16 @@ html.ghsn-active.ghsn-pinned .ghsn-tabstrip {
 
 html.ghsn-active.ghsn-pinned.ghsn-tabs .ghsn-tabsblock {
   background-color: var(--bgColor-default, var(--color-canvas-default, #ffffff)) !important;
+}
+
+/* The strip's top edge is lifted a little above its top line so the line has
+ * room to breathe under the nav. That room has to exist inside the block, or the
+ * lift is clamped at the block's own top edge — GitHub leaves about 13px there,
+ * which is less than we want. The padding sits above the strip's top edge, so it
+ * is never seen; it only makes the lift possible. */
+
+html.ghsn-active.ghsn-pinned.ghsn-tabs .ghsn-tabsblock {
+  padding-top: var(--ghsn-strip-pad) !important;
 }
 
 html.ghsn-active.ghsn-pinned .ghsn-nav {
