@@ -73,7 +73,8 @@ not attempted a fifth time the same way:
 | 1.8.0 | hide the title row's buttons by naming Primer's slots | buttons stayed: the slot names guessed at did not match |
 | 1.8.1 | hide them structurally — any child of the row not containing the heading | hid nothing: the row has one child wrapping title, pencil and buttons together |
 | 1.8.2 | climb from the title to the row, hiding sibling *controls* at each level | hid the wrong thing — the span holding #123 — and still missed the buttons, which are outside the title row entirely |
-| 1.8.3 | hide controls *within* siblings; climb to the block, not the row | current |
+| 1.8.3 | hide controls *within* siblings; climb to the block, not the row | buttons went, but their empty container stayed — and later-rendered buttons were never marked |
+| 1.8.4 | hide all-control containers whole; mark hosts so CSS catches new buttons | current |
 
 **Correction, from the 1.8.2 debug log.** The 1.5.0 diagnosis was wrong. GitHub's
 bar *does* mount and stick under our pinning — the log shows it resolving to
@@ -97,6 +98,13 @@ Two separate lessons from the same area, both worth keeping:
   elements, and the issue number sits *beside* it rather than inside — so
   shrinking the heading, or even its descendants, leaves `#123` full size. The
   shrink has to cover the whole row.
+* Hide the container, not just the buttons, when the container holds nothing
+  else. A padded box with everything inside it hidden still occupies the height
+  the exercise was meant to reclaim.
+* Mark the container and let a CSS descendant rule hide the controls, rather than
+  marking each button from JS. The header re-renders — a merge status button and a
+  loading spinner arrive after our pass — and anything marked one-by-one at attach
+  time misses them.
 * The action buttons are not in the title row. The check summary and the Code
   button are siblings of `PageHeader-TitleArea`, one level further out, so any
   walk bounded by the title row misses them. Climb to the pinned block.

@@ -167,12 +167,17 @@ html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-tabsblock {
   overflow: visible !important;
 }
 
-/* Tighten the two lines towards each other, as the compact bar does. */
+/* Tighten the two lines towards each other, as the compact bar does. Padding and
+ * row-gap as well as margin: the rows carry all three, and a gap left behind by
+ * a hidden button's container is still a gap. */
 
 html.ghsn-active.ghsn-pinned .ghsn-titlerow,
 html.ghsn-active.ghsn-pinned .ghsn-staterow {
   margin-top: 0 !important;
   margin-bottom: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  row-gap: 0 !important;
 }
 
 /* ---- strip the title row's buttons while pinned --------------------- */
@@ -185,6 +190,17 @@ html.ghsn-active.ghsn-pinned .ghsn-staterow {
  * but they matched nothing on the header they were written for. */
 
 html.ghsn-active.ghsn-pinned .ghsn-extra {
+  display: none !important;
+}
+
+/* A host keeps its text and loses its controls. Written as a descendant rule
+ * rather than by marking each button, so a button React adds after we looked is
+ * hidden too — and it does add them. */
+
+html.ghsn-active.ghsn-pinned .ghsn-extrahost button,
+html.ghsn-active.ghsn-pinned .ghsn-extrahost [class*="Button"],
+html.ghsn-active.ghsn-pinned .ghsn-extrahost [data-component="Button"],
+html.ghsn-active.ghsn-pinned .ghsn-extrahost [data-component="IconButton"] {
   display: none !important;
 }
 

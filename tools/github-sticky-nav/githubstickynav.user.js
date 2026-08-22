@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GitHub Sticky Repo Nav
 // @namespace    https://github.com/colfin-96/ai-lab
-// @version      1.8.3
+// @version      1.8.4
 // @description  Keeps GitHub's repo nav and the PR tab strip (Conversation / Commits / Checks / Files changed) reachable: they hide as you scroll down and slide back in the moment you scroll up.
 // @author       colfin-96
 // @match        https://github.com/*
@@ -209,12 +209,17 @@ html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-tabsblock {
   overflow: visible !important;
 }
 
-/* Tighten the two lines towards each other, as the compact bar does. */
+/* Tighten the two lines towards each other, as the compact bar does. Padding and
+ * row-gap as well as margin: the rows carry all three, and a gap left behind by
+ * a hidden button's container is still a gap. */
 
 html.ghsn-active.ghsn-pinned .ghsn-titlerow,
 html.ghsn-active.ghsn-pinned .ghsn-staterow {
   margin-top: 0 !important;
   margin-bottom: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  row-gap: 0 !important;
 }
 
 /* ---- strip the title row's buttons while pinned --------------------- */
@@ -227,6 +232,17 @@ html.ghsn-active.ghsn-pinned .ghsn-staterow {
  * but they matched nothing on the header they were written for. */
 
 html.ghsn-active.ghsn-pinned .ghsn-extra {
+  display: none !important;
+}
+
+/* A host keeps its text and loses its controls. Written as a descendant rule
+ * rather than by marking each button, so a button React adds after we looked is
+ * hidden too — and it does add them. */
+
+html.ghsn-active.ghsn-pinned .ghsn-extrahost button,
+html.ghsn-active.ghsn-pinned .ghsn-extrahost [class*="Button"],
+html.ghsn-active.ghsn-pinned .ghsn-extrahost [data-component="Button"],
+html.ghsn-active.ghsn-pinned .ghsn-extrahost [data-component="IconButton"] {
   display: none !important;
 }
 
@@ -566,7 +582,7 @@ html.ghsn-active {
     CONFIG.includeTitle ? findMarkerAbove(TITLE_SELECTORS) : null;
 
   const clearExtras = () => {
-    for (const el of extras) el.classList.remove('ghsn-extra');
+    for (const el of extras) el.classList.remove('ghsn-extra', 'ghsn-extrahost');
     extras = [];
   };
 
@@ -574,19 +590,31 @@ html.ghsn-active {
   // pencil. Anything that is a button or wraps one.
   const CONTROL_SELECTOR = 'button, [class*="Button"], [data-component="IconButton"], [data-component="Button"]';
 
-  // Hide the controls in a subtree, not the subtree. The issue number lives in a
-  // span that also holds the edit pencil, so hiding the span because it contains
-  // a button takes #123 down with it.
-  const hideControlsIn = (el) => {
-    if (el.matches(CONTROL_SELECTOR)) {
-      el.classList.add('ghsn-extra');
-      extras.push(el);
-      return;
+  // Whether a subtree is nothing but controls — no text of its own worth keeping.
+  // Such a container is hidden whole: hiding only the buttons inside it would
+  // leave an empty padded box behind, still taking up the height we came to save.
+  const onlyControls = (el) => {
+    for (const node of el.childNodes) {
+      if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) return false;
+      if (node.nodeType !== Node.ELEMENT_NODE) continue;
+      if (!node.matches(CONTROL_SELECTOR) && !onlyControls(node)) return false;
     }
-    for (const control of el.querySelectorAll(CONTROL_SELECTOR)) {
-      control.classList.add('ghsn-extra');
-      extras.push(control);
-    }
+    return true;
+  };
+
+  // Mark a sibling of the title's ancestry so the CSS can deal with it.
+  //
+  // Two outcomes: a container that is all controls goes entirely, and one that
+  // also carries text we want — the span holding both #123 and the edit pencil —
+  // becomes a host whose controls the CSS hides, keeping the text.
+  //
+  // The distinction matters for more than tidiness: marking a host rather than
+  // the individual buttons means the rule keeps working when React adds another
+  // button later, which it does.
+  const markSibling = (el) => {
+    if (!el.matches(CONTROL_SELECTOR) && !el.querySelector(CONTROL_SELECTOR)) return;
+    el.classList.add(el.matches(CONTROL_SELECTOR) || onlyControls(el) ? 'ghsn-extra' : 'ghsn-extrahost');
+    extras.push(el);
   };
 
   // Hide the title row's controls, keeping the title and the issue number.
@@ -614,12 +642,12 @@ html.ghsn-active {
         if (sib === tabs || sib.contains(tabs)) continue;
         if (stateRow && (sib === stateRow || sib.contains(stateRow))) continue;
         if (stateBadge && (sib === stateBadge || sib.contains(stateBadge))) continue;
-        hideControlsIn(sib);
+        markSibling(sib);
       }
       node = parent;
     }
 
-    log('hid', extras.length, 'control(s):', extras.map(describe).join(' | ') || 'none');
+    log('hid', extras.length, 'sibling(s):', extras.map(describe).join(' | ') || 'none');
   };
 
   // The row a marker belongs to: the child of the pinned block that contains it.
