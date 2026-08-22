@@ -171,9 +171,12 @@ means working with rows we cannot reparent, so:
   title and the "wants to merge" line then start at the same x by construction,
   rather than by two numbers that have to agree
 * the buttons are hidden by structure, not by name: the script climbs from the
-  title out to the pinned block and, at each level, hides the controls found in
-  the siblings it passes. It hides the controls *within* a sibling rather than the
-  sibling itself, because the issue number shares a span with the edit pencil.
+  title out to the pinned block and marks the siblings it passes. A sibling that
+  holds nothing but controls is hidden whole — leaving it would leave an empty
+  padded box still occupying the height. One that also carries wanted text, such
+  as the span holding both `#123` and the edit pencil, is marked as a host, and a
+  CSS rule hides the controls inside it. Marking the host rather than each button
+  matters, because the header re-renders and adds buttons after we have looked.
   The check summary and the Code button live outside the title row altogether,
   which is why the climb goes as far as the block. Naming Primer's slots was tried
   first and matched nothing
