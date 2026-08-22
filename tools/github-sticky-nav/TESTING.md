@@ -53,6 +53,9 @@ For each page: scroll down past the header, then scroll up a little.
 | 14 | Reduced motion | Enable the OS "reduce motion" setting | Strips snap instead of sliding; no animation | ⬜ |
 | 15 | Print | <kbd>Cmd</kbd>+<kbd>P</kbd> on a long PR | No floating bar in the print preview | ⬜ |
 | 16 | Back / forward | Navigate away and press Back | Strips work on the restored page | ⬜ |
+| 17 | No forced reflow while scrolling | Open the console on a long PR and scroll up and down for a few seconds | No `Forced reflow while executing JavaScript` violations. Reappearing means a layout read has been put after a write in `measure()` | ⬜ |
+| 18 | The observer is not busy | With `debug: true`, sit on a PR with an active comment box or a running check | Attach logs are occasional, not a stream. One per header change, not one per React render | ⬜ |
+| 19 | Late header still found | With `pinSubTabs: true`, open a PR and watch the tab strip appear | The strip pins even though it mounts after the nav — the observer's relevance filter must not rule out a tab strip we are still waiting for | ⬜ |
 
 ## The title, and GitHub's own sticky header
 
@@ -77,7 +80,9 @@ not attempted a fifth time the same way:
 | 1.8.4 | hide all-control containers whole; mark hosts so CSS catches new buttons | buttons gone for good, but the two lines still sat too far apart and the branch line was full size |
 | 1.9.0 | take the badge out of flow against the state row; shrink the state row too | gap shrank but did not close; subtitle sat 8px right of the title |
 | 1.9.1–1.9.4 | log the left edges, the vars as the CSS receives them, and the ancestor chain | measured the answer instead of guessing at it — see below |
-| 1.10.0 | hide the action area whole; indent the title to the state text's measured left edge | current |
+| 1.10.0 | hide the action area whole; indent the title to the state text's measured left edge | layout correct |
+| 1.10.1 | lift the strip's top line clear of the nav, padding the block so the room exists | layout done |
+| 1.11.0 | read/write split in measure(); throttle and filter the mutation observer; debug back off | current |
 
 **Correction, from the 1.8.2 debug log.** The 1.5.0 diagnosis was wrong. GitHub's
 bar *does* mount and stick under our pinning — the log shows it resolving to

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GitHub Sticky Repo Nav
 // @namespace    https://github.com/colfin-96/ai-lab
-// @version      1.10.1
+// @version      1.11.0
 // @description  Keeps GitHub's repo nav and the PR tab strip (Conversation / Commits / Checks / Files changed) reachable: they hide as you scroll down and slide back in the moment you scroll up.
 // @author       colfin-96
 // @match        https://github.com/*
@@ -477,9 +477,8 @@ html.ghsn-active {
     // than it has just starts the strip at the block's own top edge.
     stripPad: 14,
     // Log what was found on each attach to the page console. Useful when the
-    // strip is not picking up something you expected it to. On while the header
-    // layout is still being worked out — set it to false for a quiet console.
-    debug: true,
+    // strip is not picking up something you expected it to.
+    debug: false,
   };
 
   const NAV_SELECTORS = [
@@ -577,6 +576,17 @@ html.ghsn-active {
   // Headroom kept above the state badge so its row is not sheared off at the top.
 
   const log = (...args) => { if (CONFIG.debug) console.log('[ghsn]', ...args); };
+
+  // Startup gets attributed to us by the browser, because we force the page's
+  // first full layout — so it is worth being able to see which part of our own
+  // startup that actually is, rather than guessing at a single total.
+  const timed = (label, fn) => {
+    if (!CONFIG.debug) return fn();
+    const t0 = performance.now();
+    const out = fn();
+    log('timing', label, (performance.now() - t0).toFixed(1), 'ms');
+    return out;
+  };
 
   /* ---------------- element discovery ---------------- */
 
@@ -835,12 +845,73 @@ html.ghsn-active {
   // Cheap enough to run on every scroll frame, which keeps the geometry correct
   // across GitHub's soft navigations and header changes (and when
   // ResizeObserver callbacks are throttled, e.g. in a background tab).
+  //
+  // Every layout read happens before the first write, deliberately. Setting a
+  // custom property on documentElement invalidates layout for the whole
+  // document, so a getBoundingClientRect afterwards has to flush it again.
+  // Interleaving the two cost a full-page layout per pair — four per call, on
+  // every scroll frame — which Chrome reported as "Forced reflow while executing
+  // JavaScript took 30-43ms". Same readings, one layout.
   const measure = () => {
     if (!nav || !nav.isConnected || !wrapper || !wrapper.isConnected) return false;
+
+    /* ---- read: no writes past this point until the write phase ---- */
 
     const navH = Math.round(nav.getBoundingClientRect().height);
     const wrapH = Math.max(Math.round(wrapper.getBoundingClientRect().height), navH);
     if (!navH || !wrapH) return false;
+
+    // Reads a rect and a computed style, so it belongs in this phase too.
+    const ghBarH = measureGhBar();
+
+    // Strip 2 is optional: plenty of pages don't have one.
+    const hasStrip = !!tabs && tabs.isConnected && !!block && block.isConnected;
+    let stripH = 0, offset = 0, blockH = 0;
+    if (hasStrip) {
+      const tr = tabs.getBoundingClientRect();
+      const br = block.getBoundingClientRect();
+      // The strip runs from the top of the highest marker we are keeping on
+      // screen — the title, or the state badge — down to the bottom of the tab
+      // strip, with a little headroom above it, and never above the block
+      // itself: we cannot show what we don't pin.
+      let top = tr.top;
+      for (const marker of [stateBadge, title]) {
+        if (!marker || !marker.isConnected) continue;
+        const mr = marker.getBoundingClientRect();
+        if (mr.height > 0 && mr.top < top) top = Math.max(br.top, mr.top - CONFIG.stripPad);
+      }
+      stripH = Math.round(tr.bottom - top);
+      offset = Math.round(top - br.top);        // strip's position in the block
+      blockH = Math.round(br.height);
+    }
+
+    // Standing the badge left takes three numbers: its width, to indent the state
+    // row by, and the heights of the two rows, to centre it across them. Its own
+    // height is deliberately not one of them — the CSS pulls it back by half of
+    // itself instead, which is one fewer measurement to go stale. The badge is
+    // positioned against the state row, which we make the containing block
+    // ourselves, so none of this depends on guessing which ancestor of GitHub's
+    // happens to be positioned.
+    const badgeW = stateBadge && stateBadge.isConnected
+      ? Math.round(stateBadge.getBoundingClientRect().width)
+      : null;
+    const titleRowRect = titleRow && titleRow.isConnected
+      ? titleRow.getBoundingClientRect()
+      : null;
+    const stateRowH = stateRow && stateRow.isConnected
+      ? Math.round(stateRow.getBoundingClientRect().height)
+      : null;
+    // The title is indented to wherever GitHub's own "wants to merge" text
+    // starts, rather than to a width computed from the badge. Both rows sit at
+    // the same left edge and that text is already positioned by GitHub's markup,
+    // so aligning to the thing itself is one measurement and survives whatever
+    // padding or gap the markup puts in front of it. Without it the CSS falls
+    // back to the badge's width plus the gap.
+    const titleIndent = titleRowRect && stateText && stateText.isConnected
+      ? Math.round(stateText.getBoundingClientRect().left - titleRowRect.left)
+      : null;
+
+    /* ---- write ---- */
 
     if (navH !== geo.navH || wrapH !== geo.wrapH) {
       geo.navH = navH;
@@ -849,7 +920,6 @@ html.ghsn-active {
       setVar('--ghsn-pin-top', navH - wrapH);
     }
 
-    const ghBarH = measureGhBar();
     if (ghBarH !== geo.ghBarH) {
       geo.ghBarH = ghBarH;
       setVar('--ghsn-ghbar-h', ghBarH);
@@ -857,8 +927,32 @@ html.ghsn-active {
           '-> height', ghBarH);
     }
 
-    // Strip 2 is optional: plenty of pages don't have one.
-    if (!tabs || !tabs.isConnected || !block || !block.isConnected) {
+    if (badgeW !== null && badgeW !== geo.badgeW) {
+      geo.badgeW = badgeW;
+      setVar('--ghsn-badge-w', badgeW);
+    }
+    if (titleRowRect) {
+      const titleRowH = Math.round(titleRowRect.height);
+      if (titleRowH !== geo.titleRowH) {
+        geo.titleRowH = titleRowH;
+        setVar('--ghsn-titlerow-h', titleRowH);
+      }
+    }
+    if (stateRowH !== null && stateRowH !== geo.stateRowH) {
+      geo.stateRowH = stateRowH;
+      setVar('--ghsn-staterow-h', stateRowH);
+    }
+    if (titleIndent !== null && titleIndent >= 0) {
+      if (titleIndent !== geo.titleIndent) {
+        geo.titleIndent = titleIndent;
+        setVar('--ghsn-title-indent', titleIndent);
+      }
+    } else if (geo.titleIndent !== -1) {
+      geo.titleIndent = -1;
+      root.style.removeProperty('--ghsn-title-indent');
+    }
+
+    if (!hasStrip) {
       if (geo.stripH !== 0) {
         geo.stripH = 0;
         setVar('--ghsn-tabs-h', 0);
@@ -866,24 +960,6 @@ html.ghsn-active {
       root.classList.remove('ghsn-tabs');
       return true;
     }
-
-    const tr = tabs.getBoundingClientRect();
-    const br = block.getBoundingClientRect();
-    // The strip runs from the top of the anchor row — the state row, when we
-    // found one — down to the bottom of the tab strip. Without an anchor row
-    // that is just the tab strip itself.
-    // Start at the highest marker we are keeping on screen, with a little
-    // headroom so its row isn't sheared off, and never above the block itself —
-    // we cannot show what we don't pin.
-    let top = tr.top;
-    for (const marker of [stateBadge, title]) {
-      if (!marker || !marker.isConnected) continue;
-      const mr = marker.getBoundingClientRect();
-      if (mr.height > 0 && mr.top < top) top = Math.max(br.top, mr.top - CONFIG.stripPad);
-    }
-    const stripH = Math.round(tr.bottom - top);
-    const offset = Math.round(top - br.top);      // strip's position in the block
-    const blockH = Math.round(br.height);
     if (stripH <= 0 || !blockH) return true;
 
     // Lands the strip below strip 1 and below GitHub's own bar, which sits
@@ -893,53 +969,6 @@ html.ghsn-active {
     // can overflow its block's measured height) or the block's bottom edge —
     // plus a few px so the drop shadow doesn't smudge the top of the window.
     const tabsShift = navH + ghBarH + Math.max(stripH, blockH - offset) + 4;
-
-    // Standing the badge left takes three numbers: its width, to indent both rows
-    // by, and the heights of the two rows, to centre it across them. Its own
-    // height is deliberately not one of them — the CSS pulls it back by half of
-    // itself instead, which is one fewer measurement to be stale. The badge is
-    // positioned against the state row, which we make the containing block
-    // ourselves, so none of this depends on guessing which ancestor of GitHub's
-    // happens to be positioned.
-    if (stateBadge && stateBadge.isConnected) {
-      const badgeW = Math.round(stateBadge.getBoundingClientRect().width);
-      if (badgeW !== geo.badgeW) {
-        geo.badgeW = badgeW;
-        setVar('--ghsn-badge-w', badgeW);
-      }
-    }
-    if (titleRow && titleRow.isConnected) {
-      const titleRowH = Math.round(titleRow.getBoundingClientRect().height);
-      if (titleRowH !== geo.titleRowH) {
-        geo.titleRowH = titleRowH;
-        setVar('--ghsn-titlerow-h', titleRowH);
-      }
-    }
-    if (stateRow && stateRow.isConnected) {
-      const stateRowH = Math.round(stateRow.getBoundingClientRect().height);
-      if (stateRowH !== geo.stateRowH) {
-        geo.stateRowH = stateRowH;
-        setVar('--ghsn-staterow-h', stateRowH);
-      }
-    }
-
-    // The title is indented to wherever GitHub's own "wants to merge" text
-    // starts, rather than to a width computed from the badge. Both rows sit at
-    // the same left edge and the state text is already positioned by GitHub's
-    // own markup, so aligning to the thing itself needs one measurement and
-    // survives whatever padding or gap that markup puts in front of it.
-    // Without it, the CSS falls back to the badge's width plus the gap.
-    if (stateText && stateText.isConnected && titleRow && titleRow.isConnected) {
-      const indent = Math.round(stateText.getBoundingClientRect().left
-                                - titleRow.getBoundingClientRect().left);
-      if (indent >= 0 && indent !== geo.titleIndent) {
-        geo.titleIndent = indent;
-        setVar('--ghsn-title-indent', indent);
-      }
-    } else if (geo.titleIndent !== -1) {
-      geo.titleIndent = -1;
-      root.style.removeProperty('--ghsn-title-indent');
-    }
 
     geo.offset = offset;
     if (stripH !== geo.stripH || tabsTop !== geo.tabsTop || tabsShift !== geo.tabsShift) {
@@ -1310,10 +1339,10 @@ html.ghsn-active {
     ro.observe(nav);
     ro.observe(wrapper);
 
-    tabs = block = stateBadge = title = titleRow = stateRow = null;
-    attachTabs();
+    tabs = block = stateBadge = title = titleRow = stateRow = stateText = null;
+    timed('attachTabs', attachTabs);
 
-    if (!measure()) {
+    if (!timed('measure', measure)) {
       standDown();
       return;
     }
@@ -1329,7 +1358,7 @@ html.ghsn-active {
 
     clearExtraOffsets();
     tagExtraOffsets();
-    update();
+    timed('update', update);
     log('geometry', { ...geo });
   };
 
@@ -1341,8 +1370,33 @@ html.ghsn-active {
     };
   };
 
+  // Runs at once when idle, otherwise schedules a single trailing run. A plain
+  // debounce would have been simpler but is the wrong shape here: GitHub's
+  // mutations arrive in an unbroken stream on a busy page, and a debounce that
+  // keeps being reset never fires at all.
+  const throttle = (fn, ms) => {
+    let last = 0;
+    let t = null;
+    return () => {
+      const wait = ms - (performance.now() - last);
+      if (wait <= 0) {
+        if (t) { clearTimeout(t); t = null; }
+        last = performance.now();
+        fn();
+        return;
+      }
+      if (!t) {
+        t = setTimeout(() => {
+          t = null;
+          last = performance.now();
+          fn();
+        }, wait);
+      }
+    };
+  };
+
   const start = () => {
-    attach();
+    timed('attach', attach);
 
     window.addEventListener('scroll', onScroll, { passive: true });
 
@@ -1391,12 +1445,37 @@ html.ghsn-active {
       document.addEventListener(evt, renavigate);
     }
 
-    new MutationObserver(() => {
+    // GitHub is React: the document mutates continuously, and comments, diffs
+    // and timelines account for nearly all of it. The checks below run a
+    // querySelectorAll per selector, so running them per batch burnt the main
+    // thread for nothing. Two filters instead — is this batch even near the
+    // header, and has one run recently — and the queries happen at most every
+    // 250ms. A header swap noticed a quarter of a second late costs nothing.
+    const checkHeader = throttle(() => {
+      if (!nav || !nav.isConnected || nav !== findFirst(NAV_SELECTORS)) reattach();
+      else if (CONFIG.pinSubTabs && (!tabs || !tabs.isConnected) && findFirst(TAB_SELECTORS)) reattach();
+    }, 250);
+
+    // Cheap enough to run per record: contains() walks the ancestor chain, no
+    // selector matching and no layout. Anything we cannot yet rule out counts as
+    // relevant — a missing nav, or a tab strip we are still waiting for on a page
+    // that should have one.
+    const nearHeader = (rec) => {
+      const t = rec.target;
+      if (!(t instanceof Element)) return false;
+      if (!nav || !nav.isConnected || !wrapper || !wrapper.isConnected) return true;
+      if (CONFIG.pinSubTabs && (!tabs || !tabs.isConnected)) return true;
+      if (wrapper.contains(t) || t.contains(wrapper)) return true;
+      if (block && (block.contains(t) || t.contains(block))) return true;
+      return false;
+    };
+
+    new MutationObserver((records) => {
       // Never re-attach off the back of a stand-down: standing down nulls our
       // refs, which would otherwise read as "the header changed" and flap.
       if (stoodDown) return;
-      if (!nav || !nav.isConnected || nav !== findFirst(NAV_SELECTORS)) reattach();
-      else if (CONFIG.pinSubTabs && (!tabs || !tabs.isConnected) && findFirst(TAB_SELECTORS)) reattach();
+      if (!records.some(nearHeader)) return;
+      checkHeader();
     }).observe(document.documentElement, { childList: true, subtree: true });
   };
 

@@ -115,7 +115,7 @@ version in this repo, edit `extension/sticky-nav.js` and regenerate — see
 | `stripPad` | `14` | Breathing room in px above the strip's top line — the title, or the badge when `includeTitle` is off. The block is padded by the same amount while pinned so the room exists; GitHub's own header leaves only about 13px there. |
 | `pointerZone` | `8` | How close to the top edge (px) the pointer must get. |
 | `extraOffsetSelectors` | `[]` | CSS selectors for any *other* fixed bar that sits at `top: 0` and should be pushed down while the nav shows. |
-| `debug` | `true` | Logs what each attach found — nav, wrapper, tab strip, state badge, geometry, and where the title and badge landed — to the page console. On by default while the header layout is still being worked on; `false` for a quiet console. |
+| `debug` | `false` | `true` logs what each attach found — nav, wrapper, tab strip, state badge, geometry, where the title and badge landed, and how long startup took — to the page console. Start here if the strip isn't picking something up. |
 
 Visual tweaks (slide speed, the shadow under the bar) live in
 `extension/sticky-nav.css`, or in the inlined style block at the top of the
@@ -248,10 +248,38 @@ shape a GitHub header redesign would take — it removes every class it added an
 stands down for that page view, so you get stock GitHub instead of a nav stuck at
 some wrong offset. A navigation or a window resize gives it another go.
 
-Heights and offsets are re-measured on every scroll frame (a couple of
-`getBoundingClientRect` calls, so it's cheap), which keeps things correct across
-GitHub's soft navigations, window resizes, and pages where the enterprise banner
-or the tab strip isn't present.
+Heights and offsets are re-measured on every scroll frame, which keeps things
+correct across GitHub's soft navigations, window resizes, and pages where the
+enterprise banner or the tab strip isn't present.
+
+### Staying cheap
+
+Two things in here would otherwise be expensive, and both were measured rather
+than assumed.
+
+**Reads before writes.** Setting a custom property on `documentElement`
+invalidates layout for the whole document, so a `getBoundingClientRect`
+afterwards has to flush it again. Measuring and setting alternately cost a
+full-page layout per pair — four of them per call, on every scroll frame, which
+Chrome reported as `Forced reflow while executing JavaScript took 30-43ms`.
+`measure()` now takes every reading first and writes every variable afterwards:
+same numbers, one layout. Keep it that way when adding a measurement.
+
+**The mutation observer runs almost nothing.** GitHub is React, and the document
+mutates continuously — comments, diffs, timelines, all of it irrelevant here.
+Checking whether the header changed means a `querySelectorAll` per selector, so
+doing that per batch burnt the main thread for nothing. Two filters instead: is
+this batch anywhere near the header (an ancestor-chain test, no selectors, no
+layout), and has a check run in the last 250ms. A header swap noticed a quarter
+of a second late costs nothing.
+
+The throttle runs immediately when idle and otherwise schedules a single trailing
+run. A plain debounce is the wrong shape: on a busy page the mutations never stop
+long enough for one to fire.
+
+`debug: true` also times each phase of startup — the browser attributes the
+page's first full layout to whoever forces it, which is us, so a single total
+tells you nothing about which part is actually ours.
 
 ## Keeping the two copies in sync
 
