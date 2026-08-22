@@ -71,7 +71,8 @@ not attempted a fifth time the same way:
 | 1.7.2 | switch off clipping on the badge's row and the block | still wonky — the debug log showed why |
 | 1.7.3 | prefer the outermost of nested matches; never match an SVG | badge correct at last; row still showed the Code button and check summary, title too light |
 | 1.8.0 | hide the title row's buttons by naming Primer's slots | buttons stayed: the slot names guessed at did not match |
-| 1.8.1 | hide them structurally — any child of the row not containing the heading | current |
+| 1.8.1 | hide them structurally — any child of the row not containing the heading | hid nothing: the row has one child wrapping title, pencil and buttons together |
+| 1.8.2 | climb from the title to the row, hiding sibling *controls* at each level | current |
 
 Working assumption: **GitHub's bar cannot be relied on while we pin the header.**
 It is the fallback for when the title cannot be found, not the primary path.
@@ -82,6 +83,13 @@ Two separate lessons from the same area, both worth keeping:
   elements, and the issue number sits *beside* it rather than inside — so
   shrinking the heading, or even its descendants, leaves `#123` full size. The
   shrink has to cover the whole row.
+* The title row is not flat. On this header it holds a single
+  `PullRequestHeader-module__titleWithAction` wrapper containing the heading, the
+  edit pencil and the action buttons together, so any rule of the form "children
+  of the row" finds one child and stops. Climb from the marker outwards instead
+  and act at every level.
+* Hide *controls*, not siblings. The issue number sits beside the heading on some
+  headers, so "hide everything that is not the title" takes `#123` with it.
 * Prefer structure over names for anything Primer renders. Slot names were
   guessed at twice and matched nothing; "a child of this row that does not
   contain the heading" needs no name and cannot rot. The debug log prints the

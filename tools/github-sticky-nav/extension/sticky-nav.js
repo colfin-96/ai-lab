@@ -240,22 +240,46 @@
     extras = [];
   };
 
-  // Everything in the title row that is not the title itself: the Code button,
-  // the check summary, the edit pencil. Found by structure rather than by name —
-  // Primer's slot names are a moving target, but "a child of this row that does
-  // not contain the heading" is not.
+  // What counts as a control: the Code button, the check summary, the edit
+  // pencil. Anything that is a button or wraps one.
+  const CONTROL_SELECTOR = 'button, [class*="Button"], [data-component="IconButton"], [data-component="Button"]';
+
+  const isControl = (el) =>
+    el.matches(CONTROL_SELECTOR) || !!el.querySelector(CONTROL_SELECTOR);
+
+  // Hide the title row's controls, keeping the title and the issue number.
+  //
+  // Walking the row's own children is not enough: on this header the row has a
+  // single child wrapping the title, the pencil and the buttons together, so
+  // that walk finds nothing to hide. Instead climb from the title up to the row
+  // and, at each level, hide the siblings that are controls.
+  //
+  // Only controls, deliberately. The issue number is a sibling of the heading on
+  // some headers, and hiding every sibling would take it with them.
   const markExtras = () => {
     clearExtras();
     if (!CONFIG.hideTitleActions || !titleRow || !title) return;
 
-    for (const child of titleRow.children) {
-      if (child === title || child.contains(title)) continue;
-      // Keep whatever holds the badge: that is the one thing we do want on screen.
-      if (stateBadge && (child === stateBadge || child.contains(stateBadge))) continue;
-      child.classList.add('ghsn-extra');
-      extras.push(child);
+    const kept = [];
+    let node = title;
+    for (let i = 0; i < MAX_CLIMB && node && node !== titleRow; i++) {
+      const parent = node.parentElement;
+      if (!parent) break;
+      for (const sib of parent.children) {
+        if (sib === node) continue;
+        // Keep whatever holds the badge: that is the one thing we do want.
+        if (stateBadge && (sib === stateBadge || sib.contains(stateBadge))) continue;
+        if (!isControl(sib)) { kept.push(describe(sib)); continue; }
+        sib.classList.add('ghsn-extra');
+        extras.push(sib);
+      }
+      node = parent;
     }
-    log('hiding', extras.length, 'title-row extra(s):', extras.map(describe).join(', ') || 'none');
+
+    log('hid', extras.length, 'control(s):', extras.map(describe).join(' | ') || 'none',
+        '// kept:', kept.join(' | ') || 'none',
+        '// controls inside the title itself:',
+        [...title.querySelectorAll(CONTROL_SELECTOR)].map(describe).join(' | ') || 'none');
   };
 
   // The row a marker belongs to: the child of the pinned block that contains it.

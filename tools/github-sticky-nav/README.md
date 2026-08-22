@@ -170,9 +170,10 @@ means working with rows we cannot reparent, so:
   and the badge is pulled back into that indent by an equal negative margin. The
   title and the "wants to merge" line then start at the same x by construction,
   rather than by two numbers that have to agree
-* the title row's buttons are hidden by structure, not by name: every child of
-  the row that does not contain the heading is marked and hidden. Naming Primer's
-  slots was tried first and matched nothing
+* the title row's buttons are hidden by structure, not by name: the script climbs
+  from the title out to the row and hides the sibling *controls* it passes —
+  buttons, and anything wrapping one. Only controls, so the issue number beside
+  the heading survives. Naming Primer's slots was tried first and matched nothing
 * the title text is bolded, but not the issue number beside it, which GitHub
   keeps muted and normal-weight
 * the title's whole row is shrunk, not just the heading, because the issue
