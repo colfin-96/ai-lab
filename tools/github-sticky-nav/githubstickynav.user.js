@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GitHub Sticky Repo Nav
 // @namespace    https://github.com/colfin-96/ai-lab
-// @version      1.8.4
+// @version      1.9.0
 // @description  Keeps GitHub's repo nav and the PR tab strip (Conversation / Commits / Checks / Files changed) reachable: they hide as you scroll down and slide back in the moment you scroll up.
 // @author       colfin-96
 // @match        https://github.com/*
@@ -66,7 +66,9 @@
   --ghsn-ghbar-h: 0px;     /* GitHub's own sticky bar, 0 when not showing     */
   --ghsn-title-size: 13px; /* PR title size while pinned                      */
   --ghsn-badge-w: 0px;     /* Open/Merged badge width, for the indent         */
-  --ghsn-titlerow-h: 0px;  /* title row height, to lift the badge by half     */
+  --ghsn-titlerow-h: 0px;  /* title row height, part of the badge's centring  */
+  --ghsn-staterow-h: 0px;  /* state row height, the other part                */
+  --ghsn-badge-h: 0px;     /* Open/Merged badge height, to centre it by        */
   --ghsn-badge-gap: 12px;  /* space between the badge and the text            */
   --ghsn-dur: 160ms;       /* slide / fade duration                           */
 }
@@ -170,32 +172,43 @@ html.ghsn-active.ghsn-pinned .ghsn-titlerow * {
 /* ---- badge to the left of both lines ------------------------------- */
 /* GitHub's own compact bar stands the Open/Merged badge to the left of the
  * title and the "wants to merge" line, rather than inline at the start of the
- * second one. Nothing can be reparented from out here, so instead the badge is
- * lifted by half the title row's height — putting its centre on the midpoint of
- * the two lines — and the title row is indented to clear it. The state row needs
- * no indent: the badge is still in flow there, so its text already starts after
- * it.
+ * second one. Nothing can be reparented from out here, so the badge is taken out
+ * of flow instead and positioned across both lines, with both rows indented to
+ * leave it the room.
  *
- * Relative rather than absolute on purpose. Absolute would resolve against
- * whichever ancestor happens to be positioned, which is not something we can
- * know from out here; in flow, the offsets mean what they say. */
+ * Out of flow rather than merely shifted. The state row is a flex column, so an
+ * in-flow badge is a row in its own right: shifting it moved the pill but left
+ * its ~24px of row height sitting between the title and the "wants to merge"
+ * line. That leftover row was the gap.
+ *
+ * Absolute positioning normally means guessing which ancestor is positioned,
+ * which is not knowable from out here — but the containing block is one we set
+ * ourselves, on the state row, so the offsets below mean exactly what they say. */
 
-/* Both rows are indented by the same amount and the badge is pulled back out
- * into that indent by an equal negative margin. That way the badge starts at the
- * left edge while the title and the "wants to merge" line begin at exactly the
- * same x — aligning them by construction rather than by two numbers that have to
- * agree. */
+/* Both rows are indented by the badge's measured width plus the gap, and the
+ * badge is placed at left: 0, which resolves to the row's padding edge. The
+ * title and the "wants to merge" line then begin at exactly the same x by
+ * construction, rather than by two numbers that have to agree. */
 
 html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-titlerow,
 html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-staterow {
   padding-left: calc(var(--ghsn-badge-w) + var(--ghsn-badge-gap)) !important;
 }
 
-html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-badge {
+html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-staterow {
   position: relative !important;
-  top: calc(-0.5 * var(--ghsn-titlerow-h)) !important;
-  margin-left: calc(-1 * (var(--ghsn-badge-w) + var(--ghsn-badge-gap))) !important;
-  margin-right: 0 !important;
+}
+
+/* Centred across both lines: the pair spans from one title row above the state
+ * row's top edge down to the state row's bottom, so its midpoint sits at
+ * (stateRowH - titleRowH) / 2, and the badge is placed half its own height
+ * above that. */
+
+html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-badge {
+  position: absolute !important;
+  left: 0 !important;
+  top: calc(0.5 * (var(--ghsn-staterow-h) - var(--ghsn-titlerow-h) - var(--ghsn-badge-h))) !important;
+  margin: 0 !important;
 }
 
 /* Lifting the badge pushes it outside its row's box, so anything clipping on
@@ -209,9 +222,20 @@ html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-tabsblock {
   overflow: visible !important;
 }
 
+/* The "wants to merge N commits into main" line is shrunk to match the title,
+ * as the compact bar has it — but not the badge, which GitHub keeps full size,
+ * and whose width we have already measured to indent by. */
+
+html.ghsn-active.ghsn-pinned .ghsn-staterow,
+html.ghsn-active.ghsn-pinned .ghsn-staterow *:not(.ghsn-badge):not(.ghsn-badge *) {
+  font-size: var(--ghsn-title-size) !important;
+  line-height: 1.35 !important;
+}
+
 /* Tighten the two lines towards each other, as the compact bar does. Padding and
  * row-gap as well as margin: the rows carry all three, and a gap left behind by
- * a hidden button's container is still a gap. */
+ * a hidden button's container is still a gap. Direct children too, since a row
+ * is usually one wrapper deep and the wrapper carries margins of its own. */
 
 html.ghsn-active.ghsn-pinned .ghsn-titlerow,
 html.ghsn-active.ghsn-pinned .ghsn-staterow {
@@ -220,6 +244,12 @@ html.ghsn-active.ghsn-pinned .ghsn-staterow {
   padding-top: 0 !important;
   padding-bottom: 0 !important;
   row-gap: 0 !important;
+}
+
+html.ghsn-active.ghsn-pinned .ghsn-titlerow > *,
+html.ghsn-active.ghsn-pinned .ghsn-staterow > *:not(.ghsn-badge) {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
 }
 
 /* ---- strip the title row's buttons while pinned --------------------- */
@@ -460,7 +490,8 @@ html.ghsn-active {
   // stripH is the height of everything we keep visible from the PR block, and
   // offset is where that strip starts inside the block — the point that should
   // land at navH once pinned, which is also what the fail-safe checks.
-  const geo = { navH: 0, wrapH: 0, stripH: 0, offset: 0, ghBarH: 0, badgeW: 0, titleRowH: 0, tabsTop: 0, tabsShift: 0 };
+  const geo = { navH: 0, wrapH: 0, stripH: 0, offset: 0, ghBarH: 0, badgeW: 0, badgeH: 0,
+                titleRowH: 0, stateRowH: 0, tabsTop: 0, tabsShift: 0 };
 
   let lastY = 0;
   let hidden = false;
@@ -804,15 +835,22 @@ html.ghsn-active {
     // plus a few px so the drop shadow doesn't smudge the top of the window.
     const tabsShift = navH + ghBarH + Math.max(stripH, blockH - offset) + 4;
 
-    // Standing the badge left needs two numbers: its own width, to indent the
-    // title row by, and the title row's height, to lift the badge by half of so
-    // it centres across both lines. It stays in flow, so nothing here depends on
-    // which ancestor happens to be positioned.
+    // Standing the badge left takes four numbers: its width, to indent both rows
+    // by; its own height and the heights of the two rows, to centre it across
+    // them. The badge is positioned against the state row, which we make the
+    // containing block ourselves, so none of this depends on guessing which
+    // ancestor of GitHub's happens to be positioned.
     if (stateBadge && stateBadge.isConnected) {
-      const badgeW = Math.round(stateBadge.getBoundingClientRect().width);
+      const bp = stateBadge.getBoundingClientRect();
+      const badgeW = Math.round(bp.width);
+      const badgeH = Math.round(bp.height);
       if (badgeW !== geo.badgeW) {
         geo.badgeW = badgeW;
         setVar('--ghsn-badge-w', badgeW);
+      }
+      if (badgeH !== geo.badgeH) {
+        geo.badgeH = badgeH;
+        setVar('--ghsn-badge-h', badgeH);
       }
     }
     if (titleRow && titleRow.isConnected) {
@@ -820,6 +858,13 @@ html.ghsn-active {
       if (titleRowH !== geo.titleRowH) {
         geo.titleRowH = titleRowH;
         setVar('--ghsn-titlerow-h', titleRowH);
+      }
+    }
+    if (stateRow && stateRow.isConnected) {
+      const stateRowH = Math.round(stateRow.getBoundingClientRect().height);
+      if (stateRowH !== geo.stateRowH) {
+        geo.stateRowH = stateRowH;
+        setVar('--ghsn-staterow-h', stateRowH);
       }
     }
 

@@ -114,7 +114,8 @@
   // stripH is the height of everything we keep visible from the PR block, and
   // offset is where that strip starts inside the block — the point that should
   // land at navH once pinned, which is also what the fail-safe checks.
-  const geo = { navH: 0, wrapH: 0, stripH: 0, offset: 0, ghBarH: 0, badgeW: 0, titleRowH: 0, tabsTop: 0, tabsShift: 0 };
+  const geo = { navH: 0, wrapH: 0, stripH: 0, offset: 0, ghBarH: 0, badgeW: 0, badgeH: 0,
+                titleRowH: 0, stateRowH: 0, tabsTop: 0, tabsShift: 0 };
 
   let lastY = 0;
   let hidden = false;
@@ -458,15 +459,22 @@
     // plus a few px so the drop shadow doesn't smudge the top of the window.
     const tabsShift = navH + ghBarH + Math.max(stripH, blockH - offset) + 4;
 
-    // Standing the badge left needs two numbers: its own width, to indent the
-    // title row by, and the title row's height, to lift the badge by half of so
-    // it centres across both lines. It stays in flow, so nothing here depends on
-    // which ancestor happens to be positioned.
+    // Standing the badge left takes four numbers: its width, to indent both rows
+    // by; its own height and the heights of the two rows, to centre it across
+    // them. The badge is positioned against the state row, which we make the
+    // containing block ourselves, so none of this depends on guessing which
+    // ancestor of GitHub's happens to be positioned.
     if (stateBadge && stateBadge.isConnected) {
-      const badgeW = Math.round(stateBadge.getBoundingClientRect().width);
+      const bp = stateBadge.getBoundingClientRect();
+      const badgeW = Math.round(bp.width);
+      const badgeH = Math.round(bp.height);
       if (badgeW !== geo.badgeW) {
         geo.badgeW = badgeW;
         setVar('--ghsn-badge-w', badgeW);
+      }
+      if (badgeH !== geo.badgeH) {
+        geo.badgeH = badgeH;
+        setVar('--ghsn-badge-h', badgeH);
       }
     }
     if (titleRow && titleRow.isConnected) {
@@ -474,6 +482,13 @@
       if (titleRowH !== geo.titleRowH) {
         geo.titleRowH = titleRowH;
         setVar('--ghsn-titlerow-h', titleRowH);
+      }
+    }
+    if (stateRow && stateRow.isConnected) {
+      const stateRowH = Math.round(stateRow.getBoundingClientRect().height);
+      if (stateRowH !== geo.stateRowH) {
+        geo.stateRowH = stateRowH;
+        setVar('--ghsn-staterow-h', stateRowH);
       }
     }
 

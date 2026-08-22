@@ -162,14 +162,21 @@ GitHub's own bar stands the Open/Merged badge to the left of two stacked lines �
 title on top, "wants to merge …" underneath. Reproducing that from the outside
 means working with rows we cannot reparent, so:
 
-* the badge is lifted by half the title row's height, which puts its centre on
-  the midpoint of the two lines, and stays in flow while doing it — absolute
-  positioning would resolve against whichever ancestor happens to be positioned,
-  which is not knowable from out here
+* the badge is taken out of flow and positioned across both lines, centred on
+  their midpoint from three measured numbers — the two rows' heights and its own.
+  Out of flow is the point: the state row is a flex column, so an in-flow badge
+  is a row of its own, and merely shifting it moved the pill while leaving ~24px
+  of empty row between the title and the "wants to merge" line. Positioning
+  absolutely usually means guessing which ancestor is positioned, which is not
+  knowable from out here — but the containing block is the state row, and we set
+  that ourselves
 * both rows are indented by the badge's measured width plus `--ghsn-badge-gap`,
-  and the badge is pulled back into that indent by an equal negative margin. The
+  and the badge sits at `left: 0`, which resolves to the row's padding edge. The
   title and the "wants to merge" line then start at the same x by construction,
   rather than by two numbers that have to agree
+* the "wants to merge N commits into `main`" line is shrunk to the title's size,
+  and the badge deliberately isn't — GitHub keeps it full size, and its width is
+  what the indent is measured from
 * the buttons are hidden by structure, not by name: the script climbs from the
   title out to the pinned block and marks the siblings it passes. A sibling that
   holds nothing but controls is hidden whole — leaving it would leave an empty

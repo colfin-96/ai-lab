@@ -74,7 +74,8 @@ not attempted a fifth time the same way:
 | 1.8.1 | hide them structurally — any child of the row not containing the heading | hid nothing: the row has one child wrapping title, pencil and buttons together |
 | 1.8.2 | climb from the title to the row, hiding sibling *controls* at each level | hid the wrong thing — the span holding #123 — and still missed the buttons, which are outside the title row entirely |
 | 1.8.3 | hide controls *within* siblings; climb to the block, not the row | buttons went, but their empty container stayed — and later-rendered buttons were never marked |
-| 1.8.4 | hide all-control containers whole; mark hosts so CSS catches new buttons | current |
+| 1.8.4 | hide all-control containers whole; mark hosts so CSS catches new buttons | buttons gone for good, but the two lines still sat too far apart and the branch line was full size |
+| 1.9.0 | take the badge out of flow against the state row; shrink the state row too | current |
 
 **Correction, from the 1.8.2 debug log.** The 1.5.0 diagnosis was wrong. GitHub's
 bar *does* mount and stick under our pinning — the log shows it resolving to
@@ -94,6 +95,13 @@ are showing our own title.
 
 Two separate lessons from the same area, both worth keeping:
 
+* An in-flow badge inside a flex column occupies a row of its own. Shifting it
+  with `position: relative` moved the pill to the left but left its full height
+  behind as blank space between the title and the branch line — which read as a
+  spacing bug rather than as the badge's own leftover row. Taking it out of flow
+  is what removed the gap. The containing block is the state row, which we set
+  `position: relative` on ourselves, so absolute positioning is safe here even
+  though guessing at GitHub's positioned ancestors would not be.
 * What we mark as the title is a heading whose text is wrapped in further
   elements, and the issue number sits *beside* it rather than inside — so
   shrinking the heading, or even its descendants, leaves `#123` full size. The
