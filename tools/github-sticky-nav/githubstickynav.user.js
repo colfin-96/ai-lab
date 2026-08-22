@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GitHub Sticky Repo Nav
 // @namespace    https://github.com/colfin-96/ai-lab
-// @version      1.9.0
+// @version      1.9.1
 // @description  Keeps GitHub's repo nav and the PR tab strip (Conversation / Commits / Checks / Files changed) reachable: they hide as you scroll down and slide back in the moment you scroll up.
 // @author       colfin-96
 // @match        https://github.com/*
@@ -903,6 +903,38 @@ html.ghsn-active {
     root.classList.toggle('ghsn-hidden', hidden);
   };
 
+  // Alignment is arithmetic across measured numbers, so when it comes out wrong
+  // the useful question is which number disagrees — not which rule to try next.
+  // This dumps the left edges the two lines actually landed on, the badge's real
+  // containing block, and the spacing each row carries of its own. Debug only,
+  // once per pin.
+  const logAlign = () => {
+    if (!CONFIG.debug) return;
+    const box = (el) => {
+      if (!el || !el.isConnected) return null;
+      const b = el.getBoundingClientRect();
+      return { l: Math.round(b.left), t: Math.round(b.top), w: Math.round(b.width), h: Math.round(b.height) };
+    };
+    const space = (el) => {
+      if (!el || !el.isConnected) return null;
+      const c = getComputedStyle(el);
+      return { pl: c.paddingLeft, ml: c.marginLeft, gap: c.gap, disp: c.display, pos: c.position };
+    };
+    // The state row's text line: whatever it holds that is not the badge.
+    const stateText = stateRow
+      ? [...stateRow.children].find((c) => c !== stateBadge && !c.contains(stateBadge))
+      : null;
+    log('align', {
+      titleRow: box(titleRow), titleRowCss: space(titleRow),
+      title: box(title), titleCss: space(title),
+      stateRow: box(stateRow), stateRowCss: space(stateRow),
+      stateText: describe(stateText), stateTextBox: box(stateText), stateTextCss: space(stateText),
+      badge: box(stateBadge), badgeCss: space(stateBadge),
+      badgeParent: describe(stateBadge?.parentElement),
+      badgeOffsetParent: describe(stateBadge?.offsetParent),
+    });
+  };
+
   // Confirm the strips actually landed where the geometry said they would. If
   // GitHub restructures its header and we end up pinning the wrong block, this
   // is what turns a nav wedged at the wrong offset back into stock GitHub.
@@ -957,6 +989,7 @@ html.ghsn-active {
         performance.now() - lastSlide > SLIDE_SETTLE) {
       if (verifyPin()) {
         verdict = 'ok';
+        logAlign();
       } else {
         verdict = 'failed';
         stoodDown = true;
