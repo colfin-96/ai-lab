@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GitHub Sticky Repo Nav
 // @namespace    https://github.com/colfin-96/ai-lab
-// @version      1.8.0
+// @version      1.8.1
 // @description  Keeps GitHub's repo nav and the PR tab strip (Conversation / Commits / Checks / Files changed) reachable: they hide as you scroll down and slide back in the moment you scroll up.
 // @author       colfin-96
 // @match        https://github.com/*
@@ -219,9 +219,16 @@ html.ghsn-active.ghsn-pinned .ghsn-staterow {
 
 /* ---- strip the title row's buttons while pinned --------------------- */
 /* The Code button, the check summary and the edit pencil are what set the title
- * row's height, and GitHub's own compact bar shows none of them. Targeted by
- * Primer's data-component attributes, with class fallbacks: the attributes are
- * part of the component contract, the hashed classes are not. */
+ * row's height, and GitHub's own compact bar shows none of them.
+ *
+ * The reliable rule is structural, applied by sticky-nav.js: any child of the
+ * title row that does not contain the heading gets .ghsn-extra. Naming the slots
+ * instead did not work — the selectors below are kept as a belt to the braces,
+ * but they matched nothing on the header they were written for. */
+
+html.ghsn-active.ghsn-pinned .ghsn-extra {
+  display: none !important;
+}
 
 html.ghsn-active.ghsn-pinned.ghsn-hideactions .ghsn-titlerow [data-component="PH_Actions"],
 html.ghsn-active.ghsn-pinned.ghsn-hideactions .ghsn-titlerow [data-component="PH_TrailingAction"],
@@ -430,6 +437,7 @@ html.ghsn-active {
   let title = null;      // PR/issue title, when we are keeping it on screen
   let titleRow = null;   // the row it sits in, so the whole line can be shrunk
   let stateRow = null;   // the row the badge sits in
+  let extras = [];       // title-row children we hide while pinned
   let ghBar = null;      // GitHub's own sticky header, once it turns up
   let ghBarSeen = 0;     // when we last looked for it
 
@@ -556,6 +564,29 @@ html.ghsn-active {
 
   const findTitle = () =>
     CONFIG.includeTitle ? findMarkerAbove(TITLE_SELECTORS) : null;
+
+  const clearExtras = () => {
+    for (const el of extras) el.classList.remove('ghsn-extra');
+    extras = [];
+  };
+
+  // Everything in the title row that is not the title itself: the Code button,
+  // the check summary, the edit pencil. Found by structure rather than by name —
+  // Primer's slot names are a moving target, but "a child of this row that does
+  // not contain the heading" is not.
+  const markExtras = () => {
+    clearExtras();
+    if (!CONFIG.hideTitleActions || !titleRow || !title) return;
+
+    for (const child of titleRow.children) {
+      if (child === title || child.contains(title)) continue;
+      // Keep whatever holds the badge: that is the one thing we do want on screen.
+      if (stateBadge && (child === stateBadge || child.contains(stateBadge))) continue;
+      child.classList.add('ghsn-extra');
+      extras.push(child);
+    }
+    log('hiding', extras.length, 'title-row extra(s):', extras.map(describe).join(', ') || 'none');
+  };
 
   // The row a marker belongs to: the child of the pinned block that contains it.
   //
@@ -866,6 +897,7 @@ html.ghsn-active {
     titleRow?.classList.remove('ghsn-titlerow');
     stateRow?.classList.remove('ghsn-staterow');
     stateBadge?.classList.remove('ghsn-badge');
+    clearExtras();
   };
 
   let ro = null;
@@ -886,6 +918,7 @@ html.ghsn-active {
     tabs?.classList.remove('ghsn-tabstrip');
     tabs = found;
     block = found ? climbToPageBlock(found) : null;
+    clearExtras();
     title?.classList.remove('ghsn-title');
     titleRow?.classList.remove('ghsn-titlerow');
     stateRow?.classList.remove('ghsn-staterow');
@@ -927,6 +960,12 @@ html.ghsn-active {
       if (canMoveBadge) stateBadge.classList.add('ghsn-badge');
       root.classList.toggle('ghsn-badgeleft', canMoveBadge);
       root.classList.toggle('ghsn-hideactions', CONFIG.hideTitleActions && !!titleRow);
+      markExtras();
+
+      if (titleRow) {
+        log('title row children:',
+            [...titleRow.children].map((c) => `${describe(c)}[${c.dataset.component || '-'}]`).join(' | '));
+      }
       // Showing our own title makes GitHub's bar a duplicate, so the CSS fades
       // it out — and measureGhBar then reads it as zero height, which keeps the
       // geometry consistent without a second switch to keep in step.

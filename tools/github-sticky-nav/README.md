@@ -170,9 +170,9 @@ means working with rows we cannot reparent, so:
   and the badge is pulled back into that indent by an equal negative margin. The
   title and the "wants to merge" line then start at the same x by construction,
   rather than by two numbers that have to agree
-* the title row's buttons are hidden, targeted by Primer's `data-component`
-  attributes rather than its hashed class names — the attributes are part of the
-  component contract, the classes are not
+* the title row's buttons are hidden by structure, not by name: every child of
+  the row that does not contain the heading is marked and hidden. Naming Primer's
+  slots was tried first and matched nothing
 * the title text is bolded, but not the issue number beside it, which GitHub
   keeps muted and normal-weight
 * the title's whole row is shrunk, not just the heading, because the issue

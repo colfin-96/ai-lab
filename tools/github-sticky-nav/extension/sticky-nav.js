@@ -107,6 +107,7 @@
   let title = null;      // PR/issue title, when we are keeping it on screen
   let titleRow = null;   // the row it sits in, so the whole line can be shrunk
   let stateRow = null;   // the row the badge sits in
+  let extras = [];       // title-row children we hide while pinned
   let ghBar = null;      // GitHub's own sticky header, once it turns up
   let ghBarSeen = 0;     // when we last looked for it
 
@@ -233,6 +234,29 @@
 
   const findTitle = () =>
     CONFIG.includeTitle ? findMarkerAbove(TITLE_SELECTORS) : null;
+
+  const clearExtras = () => {
+    for (const el of extras) el.classList.remove('ghsn-extra');
+    extras = [];
+  };
+
+  // Everything in the title row that is not the title itself: the Code button,
+  // the check summary, the edit pencil. Found by structure rather than by name —
+  // Primer's slot names are a moving target, but "a child of this row that does
+  // not contain the heading" is not.
+  const markExtras = () => {
+    clearExtras();
+    if (!CONFIG.hideTitleActions || !titleRow || !title) return;
+
+    for (const child of titleRow.children) {
+      if (child === title || child.contains(title)) continue;
+      // Keep whatever holds the badge: that is the one thing we do want on screen.
+      if (stateBadge && (child === stateBadge || child.contains(stateBadge))) continue;
+      child.classList.add('ghsn-extra');
+      extras.push(child);
+    }
+    log('hiding', extras.length, 'title-row extra(s):', extras.map(describe).join(', ') || 'none');
+  };
 
   // The row a marker belongs to: the child of the pinned block that contains it.
   //
@@ -543,6 +567,7 @@
     titleRow?.classList.remove('ghsn-titlerow');
     stateRow?.classList.remove('ghsn-staterow');
     stateBadge?.classList.remove('ghsn-badge');
+    clearExtras();
   };
 
   let ro = null;
@@ -563,6 +588,7 @@
     tabs?.classList.remove('ghsn-tabstrip');
     tabs = found;
     block = found ? climbToPageBlock(found) : null;
+    clearExtras();
     title?.classList.remove('ghsn-title');
     titleRow?.classList.remove('ghsn-titlerow');
     stateRow?.classList.remove('ghsn-staterow');
@@ -604,6 +630,12 @@
       if (canMoveBadge) stateBadge.classList.add('ghsn-badge');
       root.classList.toggle('ghsn-badgeleft', canMoveBadge);
       root.classList.toggle('ghsn-hideactions', CONFIG.hideTitleActions && !!titleRow);
+      markExtras();
+
+      if (titleRow) {
+        log('title row children:',
+            [...titleRow.children].map((c) => `${describe(c)}[${c.dataset.component || '-'}]`).join(' | '));
+      }
       // Showing our own title makes GitHub's bar a duplicate, so the CSS fades
       // it out — and measureGhBar then reads it as zero height, which keeps the
       // geometry consistent without a second switch to keep in step.

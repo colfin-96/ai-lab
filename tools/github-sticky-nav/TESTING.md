@@ -70,7 +70,8 @@ not attempted a fifth time the same way:
 | 1.7.1 | climb to the outermost ancestor that excludes the tabs; lift the badge in flow | issue number shrank correctly, badge moved left but its top was clipped |
 | 1.7.2 | switch off clipping on the badge's row and the block | still wonky — the debug log showed why |
 | 1.7.3 | prefer the outermost of nested matches; never match an SVG | badge correct at last; row still showed the Code button and check summary, title too light |
-| 1.8.0 | hide the title row's buttons, bold the title, align both rows off one indent | current |
+| 1.8.0 | hide the title row's buttons by naming Primer's slots | buttons stayed: the slot names guessed at did not match |
+| 1.8.1 | hide them structurally — any child of the row not containing the heading | current |
 
 Working assumption: **GitHub's bar cannot be relied on while we pin the header.**
 It is the fallback for when the title cannot be found, not the primary path.
@@ -81,6 +82,11 @@ Two separate lessons from the same area, both worth keeping:
   elements, and the issue number sits *beside* it rather than inside — so
   shrinking the heading, or even its descendants, leaves `#123` full size. The
   shrink has to cover the whole row.
+* Prefer structure over names for anything Primer renders. Slot names were
+  guessed at twice and matched nothing; "a child of this row that does not
+  contain the heading" needs no name and cannot rot. The debug log prints the
+  title row's children with their `data-component` values, so if this ever needs
+  naming again, read them off there rather than guessing.
 * Marker selection must prefer the **outermost** of nested matches. Primer names
   the icon inside a badge after the badge, so `[class*="StateLabel"]` matches
   both the pill and the `<svg>` glyph inside it — and a "take the lowest

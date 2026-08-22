@@ -177,9 +177,16 @@ html.ghsn-active.ghsn-pinned .ghsn-staterow {
 
 /* ---- strip the title row's buttons while pinned --------------------- */
 /* The Code button, the check summary and the edit pencil are what set the title
- * row's height, and GitHub's own compact bar shows none of them. Targeted by
- * Primer's data-component attributes, with class fallbacks: the attributes are
- * part of the component contract, the hashed classes are not. */
+ * row's height, and GitHub's own compact bar shows none of them.
+ *
+ * The reliable rule is structural, applied by sticky-nav.js: any child of the
+ * title row that does not contain the heading gets .ghsn-extra. Naming the slots
+ * instead did not work — the selectors below are kept as a belt to the braces,
+ * but they matched nothing on the header they were written for. */
+
+html.ghsn-active.ghsn-pinned .ghsn-extra {
+  display: none !important;
+}
 
 html.ghsn-active.ghsn-pinned.ghsn-hideactions .ghsn-titlerow [data-component="PH_Actions"],
 html.ghsn-active.ghsn-pinned.ghsn-hideactions .ghsn-titlerow [data-component="PH_TrailingAction"],
