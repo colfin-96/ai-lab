@@ -163,13 +163,19 @@ title on top, "wants to merge …" underneath. Reproducing that from the outside
 means working with rows we cannot reparent, so:
 
 * the badge is taken out of flow and positioned across both lines, centred on
-  their midpoint from three measured numbers — the two rows' heights and its own.
-  Out of flow is the point: the state row is a flex column, so an in-flow badge
-  is a row of its own, and merely shifting it moved the pill while leaving ~24px
-  of empty row between the title and the "wants to merge" line. Positioning
-  absolutely usually means guessing which ancestor is positioned, which is not
-  knowable from out here — but the containing block is the state row, and we set
-  that ourselves
+  their midpoint from the two rows' measured heights and pulled back by half of
+  itself with a transform — its own size is something it already knows, and one
+  fewer measurement is one fewer thing to go stale. Out of flow is the point: the
+  badge shares a flex row with the "wants to merge" text, and that row is as tall
+  as the badge, so an in-flow badge left ~14px of its own height sitting between
+  the two lines. Positioning absolutely usually means guessing which ancestor is
+  positioned, which is not knowable from out here — but the containing block is
+  the state row, and we set that ourselves
+* the gap between the two lines can belong to neither of them: their common
+  ancestors carry a row-gap and padding of their own, which no rule aimed at the
+  rows can reach. Those ancestors are marked too, up to but not including the
+  pinned block — that one also holds the tab strip, and the space below the state
+  row is the tabs' own
 * both rows are indented by the badge's measured width plus `--ghsn-badge-gap`,
   and the badge sits at `left: 0`, which resolves to the row's padding edge. The
   title and the "wants to merge" line then start at the same x by construction,

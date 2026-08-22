@@ -26,7 +26,6 @@
   --ghsn-badge-w: 0px;     /* Open/Merged badge width, for the indent         */
   --ghsn-titlerow-h: 0px;  /* title row height, part of the badge's centring  */
   --ghsn-staterow-h: 0px;  /* state row height, the other part                */
-  --ghsn-badge-h: 0px;     /* Open/Merged badge height, to centre it by        */
   --ghsn-badge-gap: 12px;  /* space between the badge and the text            */
   --ghsn-dur: 160ms;       /* slide / fade duration                           */
 }
@@ -159,13 +158,15 @@ html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-staterow {
 
 /* Centred across both lines: the pair spans from one title row above the state
  * row's top edge down to the state row's bottom, so its midpoint sits at
- * (stateRowH - titleRowH) / 2, and the badge is placed half its own height
- * above that. */
+ * (stateRowH - titleRowH) / 2. The badge is then pulled up by half of itself
+ * with a transform rather than by a measured height — its own size is something
+ * it already knows, and one fewer measurement is one fewer thing to go stale. */
 
 html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-badge {
   position: absolute !important;
   left: 0 !important;
-  top: calc(0.5 * (var(--ghsn-staterow-h) - var(--ghsn-titlerow-h) - var(--ghsn-badge-h))) !important;
+  top: calc(0.5 * (var(--ghsn-staterow-h) - var(--ghsn-titlerow-h))) !important;
+  transform: translateY(-50%) !important;
   margin: 0 !important;
 }
 
@@ -208,6 +209,19 @@ html.ghsn-active.ghsn-pinned .ghsn-titlerow > *,
 html.ghsn-active.ghsn-pinned .ghsn-staterow > *:not(.ghsn-badge) {
   margin-top: 0 !important;
   margin-bottom: 0 !important;
+}
+
+/* The gap between the two lines can belong to neither of them. Marked by
+ * sticky-nav.js: every ancestor between the rows and their common parent, short
+ * of the pinned block — which also holds the tab strip, whose own spacing is not
+ * ours to close. */
+
+html.ghsn-active.ghsn-pinned .ghsn-rowhost {
+  row-gap: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
 }
 
 /* ---- strip the title row's buttons while pinned --------------------- */

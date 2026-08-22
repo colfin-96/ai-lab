@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GitHub Sticky Repo Nav
 // @namespace    https://github.com/colfin-96/ai-lab
-// @version      1.9.2
+// @version      1.9.3
 // @description  Keeps GitHub's repo nav and the PR tab strip (Conversation / Commits / Checks / Files changed) reachable: they hide as you scroll down and slide back in the moment you scroll up.
 // @author       colfin-96
 // @match        https://github.com/*
@@ -68,7 +68,6 @@
   --ghsn-badge-w: 0px;     /* Open/Merged badge width, for the indent         */
   --ghsn-titlerow-h: 0px;  /* title row height, part of the badge's centring  */
   --ghsn-staterow-h: 0px;  /* state row height, the other part                */
-  --ghsn-badge-h: 0px;     /* Open/Merged badge height, to centre it by        */
   --ghsn-badge-gap: 12px;  /* space between the badge and the text            */
   --ghsn-dur: 160ms;       /* slide / fade duration                           */
 }
@@ -201,13 +200,15 @@ html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-staterow {
 
 /* Centred across both lines: the pair spans from one title row above the state
  * row's top edge down to the state row's bottom, so its midpoint sits at
- * (stateRowH - titleRowH) / 2, and the badge is placed half its own height
- * above that. */
+ * (stateRowH - titleRowH) / 2. The badge is then pulled up by half of itself
+ * with a transform rather than by a measured height — its own size is something
+ * it already knows, and one fewer measurement is one fewer thing to go stale. */
 
 html.ghsn-active.ghsn-pinned.ghsn-badgeleft .ghsn-badge {
   position: absolute !important;
   left: 0 !important;
-  top: calc(0.5 * (var(--ghsn-staterow-h) - var(--ghsn-titlerow-h) - var(--ghsn-badge-h))) !important;
+  top: calc(0.5 * (var(--ghsn-staterow-h) - var(--ghsn-titlerow-h))) !important;
+  transform: translateY(-50%) !important;
   margin: 0 !important;
 }
 
@@ -250,6 +251,19 @@ html.ghsn-active.ghsn-pinned .ghsn-titlerow > *,
 html.ghsn-active.ghsn-pinned .ghsn-staterow > *:not(.ghsn-badge) {
   margin-top: 0 !important;
   margin-bottom: 0 !important;
+}
+
+/* The gap between the two lines can belong to neither of them. Marked by
+ * sticky-nav.js: every ancestor between the rows and their common parent, short
+ * of the pinned block — which also holds the tab strip, whose own spacing is not
+ * ours to close. */
+
+html.ghsn-active.ghsn-pinned .ghsn-rowhost {
+  row-gap: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
 }
 
 /* ---- strip the title row's buttons while pinned --------------------- */
@@ -485,13 +499,14 @@ html.ghsn-active {
   let titleRow = null;   // the row it sits in, so the whole line can be shrunk
   let stateRow = null;   // the row the badge sits in
   let extras = [];       // title-row children we hide while pinned
+  let rowHosts = [];     // ancestors of the two rows, for the gap between them
   let ghBar = null;      // GitHub's own sticky header, once it turns up
   let ghBarSeen = 0;     // when we last looked for it
 
   // stripH is the height of everything we keep visible from the PR block, and
   // offset is where that strip starts inside the block — the point that should
   // land at navH once pinned, which is also what the fail-safe checks.
-  const geo = { navH: 0, wrapH: 0, stripH: 0, offset: 0, ghBarH: 0, badgeW: 0, badgeH: 0,
+  const geo = { navH: 0, wrapH: 0, stripH: 0, offset: 0, ghBarH: 0, badgeW: 0,
                 titleRowH: 0, stateRowH: 0, tabsTop: 0, tabsShift: 0 };
 
   let lastY = 0;
@@ -836,22 +851,18 @@ html.ghsn-active {
     // plus a few px so the drop shadow doesn't smudge the top of the window.
     const tabsShift = navH + ghBarH + Math.max(stripH, blockH - offset) + 4;
 
-    // Standing the badge left takes four numbers: its width, to indent both rows
-    // by; its own height and the heights of the two rows, to centre it across
-    // them. The badge is positioned against the state row, which we make the
-    // containing block ourselves, so none of this depends on guessing which
-    // ancestor of GitHub's happens to be positioned.
+    // Standing the badge left takes three numbers: its width, to indent both rows
+    // by, and the heights of the two rows, to centre it across them. Its own
+    // height is deliberately not one of them — the CSS pulls it back by half of
+    // itself instead, which is one fewer measurement to be stale. The badge is
+    // positioned against the state row, which we make the containing block
+    // ourselves, so none of this depends on guessing which ancestor of GitHub's
+    // happens to be positioned.
     if (stateBadge && stateBadge.isConnected) {
-      const bp = stateBadge.getBoundingClientRect();
-      const badgeW = Math.round(bp.width);
-      const badgeH = Math.round(bp.height);
+      const badgeW = Math.round(stateBadge.getBoundingClientRect().width);
       if (badgeW !== geo.badgeW) {
         geo.badgeW = badgeW;
         setVar('--ghsn-badge-w', badgeW);
-      }
-      if (badgeH !== geo.badgeH) {
-        geo.badgeH = badgeH;
-        setVar('--ghsn-badge-h', badgeH);
       }
     }
     if (titleRow && titleRow.isConnected) {
@@ -921,18 +932,48 @@ html.ghsn-active {
       const c = getComputedStyle(el);
       return { pl: c.paddingLeft, ml: c.marginLeft, gap: c.gap, disp: c.display, pos: c.position };
     };
-    // The state row's text line: whatever it holds that is not the badge.
-    const stateText = stateRow
-      ? [...stateRow.children].find((c) => c !== stateBadge && !c.contains(stateBadge))
-      : null;
+    // The state row's text line. Not a sibling of the badge: the two share a
+    // flex-row wrapper, so this has to descend through whatever holds the badge
+    // rather than skip it.
+    const findStateText = (el) => {
+      if (!el) return null;
+      for (const c of el.children) {
+        if (!(c instanceof HTMLElement)) continue;
+        if (c === stateBadge || c.contains(stateBadge)) {
+          const deeper = findStateText(c);
+          if (deeper) return deeper;
+          continue;
+        }
+        if (c.textContent.trim()) return c;
+      }
+      return null;
+    };
+    const stateText = findStateText(stateRow);
+    // What the CSS is actually being handed, as opposed to what was measured —
+    // a var that never updated is invisible from the geo object alone.
+    const rootCss = getComputedStyle(root);
+    const vars = {};
+    for (const name of ['--ghsn-titlerow-h', '--ghsn-staterow-h', '--ghsn-badge-w', '--ghsn-badge-gap']) {
+      vars[name.replace('--ghsn-', '')] = rootCss.getPropertyValue(name).trim();
+    }
+    // Every ancestor between the rows and the pinned block, with the spacing it
+    // contributes — the gap between the two lines need not belong to either.
+    const chain = [];
+    for (let node = titleRow?.parentElement; node && node !== block; node = node.parentElement) {
+      const c = getComputedStyle(node);
+      chain.push(`${describe(node)} {disp:${c.display} gap:${c.gap} pt:${c.paddingTop} pb:${c.paddingBottom}}`);
+    }
     log('align', {
+      vars,
       titleRow: box(titleRow), titleRowCss: space(titleRow),
       title: box(title), titleCss: space(title),
       stateRow: box(stateRow), stateRowCss: space(stateRow),
       stateText: describe(stateText), stateTextBox: box(stateText), stateTextCss: space(stateText),
       badge: box(stateBadge), badgeCss: space(stateBadge),
+      badgeTop: stateBadge ? getComputedStyle(stateBadge).top : null,
       badgeParent: describe(stateBadge?.parentElement),
       badgeOffsetParent: describe(stateBadge?.offsetParent),
+      chain,
     });
   };
 
@@ -1034,6 +1075,34 @@ html.ghsn-active {
     document.querySelectorAll('.ghsn-offset').forEach((el) => el.classList.remove('ghsn-offset'));
   };
 
+  // The space between the title and the "wants to merge" line is not always the
+  // rows' own: whatever wraps them can carry a row-gap, and each row can sit
+  // inside a padded container. Neither is reachable by styling the rows. So the
+  // ancestors between the two rows and their common parent are marked, and the
+  // CSS flattens the vertical spacing on all of them.
+  //
+  // The pinned block is excluded, because it holds the tab strip as well — the
+  // gap below the state row is the tabs', and closing it is not ours to do.
+  const clearRowHosts = () => {
+    for (const el of rowHosts) el.classList.remove('ghsn-rowhost');
+    rowHosts = [];
+  };
+
+  const markRowHosts = () => {
+    clearRowHosts();
+    if (!titleRow || !stateRow || !block) return;
+    for (const row of [titleRow, stateRow]) {
+      for (let node = row.parentElement; node && node !== block; node = node.parentElement) {
+        if (!rowHosts.includes(node)) {
+          node.classList.add('ghsn-rowhost');
+          rowHosts.push(node);
+        }
+        if (node.contains(titleRow) && node.contains(stateRow)) break;
+      }
+    }
+    log('row hosts:', rowHosts.map(describe).join(' | ') || 'none');
+  };
+
   const clearMarks = () => {
     wrapper?.classList.remove('ghsn-wrapper');
     nav?.classList.remove('ghsn-nav');
@@ -1044,6 +1113,7 @@ html.ghsn-active {
     stateRow?.classList.remove('ghsn-staterow');
     stateBadge?.classList.remove('ghsn-badge');
     clearExtras();
+    clearRowHosts();
   };
 
   let ro = null;
@@ -1065,6 +1135,7 @@ html.ghsn-active {
     tabs = found;
     block = found ? climbToPageBlock(found) : null;
     clearExtras();
+    clearRowHosts();
     title?.classList.remove('ghsn-title');
     titleRow?.classList.remove('ghsn-titlerow');
     stateRow?.classList.remove('ghsn-staterow');
@@ -1107,6 +1178,7 @@ html.ghsn-active {
       root.classList.toggle('ghsn-badgeleft', canMoveBadge);
       root.classList.toggle('ghsn-hideactions', CONFIG.hideTitleActions && !!titleRow);
       markExtras();
+      markRowHosts();
 
       if (titleRow) {
         log('title row children:',
