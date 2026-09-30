@@ -17,8 +17,12 @@ Every input needs a programmatically associated label.
 
 - `<label for>` matching a real, unique `id` — the standard and best answer.
 - A wrapping `<label>` also works.
-- `aria-label` / `aria-labelledby` when there is genuinely no visible text, but prefer a
-  visible label: it helps far more people than it costs.
+- `aria-labelledby` pointing at a visible heading, legend or adjacent text that already says
+  what to enter.
+- `aria-label` or a visually hidden `<label>` gives the field a name (4.1.2) but is not enough
+  on its own: 3.3.2 needs a label or instruction sighted users can *see*. A field whose only
+  label is invisible fails 3.3.2 unless visible text nearby does the job — a search box beside a
+  visible "Search" button, a column header above a row of inputs.
 - **Placeholder is not a label.** It disappears on input, is usually low contrast, and is not
   reliably exposed. A placeholder-only field is a real violation, and a very common one.
 - Required, format and constraint information must be available *before* the error — "must be

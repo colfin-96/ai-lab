@@ -124,7 +124,15 @@ better fix than hand-rolled ARIA when the profile says the CDK is available:
 | Tree navigation | `TreeKeyManager` |
 | Know *how* an element was focused | `FocusMonitor` / `cdkMonitorElementFocus`, emits `FocusOrigin` (mouse, keyboard, touch, program) |
 | Is this element actually focusable? | `InteractivityChecker` |
-| Hide visually, keep for AT | `.cdk-visually-hidden` (Sass mixin `a11y-visually-hidden`) |
+| Hide visually, keep for AT | the repo's own class first (see below); `.cdk-visually-hidden` only when CDK a11y styles are confirmed loaded |
+
+For visually hidden text, recommend the class recorded under the profile's "In-house a11y
+utilities" (`sr-only`, `visually-hidden` or the like) before anything else. `.cdk-visually-hidden`
+is not a global stylesheet: the CDK injects its CSS at runtime only once one of its a11y services
+(`LiveAnnouncer`, `FocusMonitor` and friends) loads it, or when the app includes the
+`a11y-visually-hidden` Sass mixin or the prebuilt CDK a11y CSS. Used on its own in a template,
+the class can render the "hidden" text in plain sight. Recommend it only when one of those is
+confirmed in the repo, and otherwise use the repo's class or name the mixin as part of the fix.
 
 `FocusMonitor` is the principled answer to "style focus differently for keyboard vs mouse" — it
 applies `.cdk-keyboard-focused` and friends, which beats guessing with `:focus-visible`

@@ -110,6 +110,9 @@ follow the active locale rather than being hardcoded. Inline foreign-language pa
 - `attr.` prefix is required for ARIA on non-property attributes: `[attr.aria-label]`, not
   `[aria-label]`. The latter silently does nothing on a plain element, which looks correct in
   review and fails at runtime. Flag it.
+- On a third-party component, `[attr.aria-label]` usually lands on a role-less host and names
+  nothing. `references/framework-notes.md` § Angular gives the order to supply a name in — the
+  component's own aria input first.
 
 ## What the linter already covers
 
@@ -127,5 +130,12 @@ of it.
 - `aria-hidden="true"` on a focusable element is a real defect (it becomes a focusable
   invisible stop), but `aria-hidden` on decorative icons inside a labelled button is correct —
   do not flag the latter.
-- A visually hidden label is a legitimate technique, not a violation. Check it is genuinely
-  clipped rather than `display: none`, which removes it from the accessibility tree entirely.
+- A visually hidden label is a legitimate way to supply an accessible name (4.1.2), not a
+  violation. Check it is genuinely clipped rather than `display: none`, which removes it from the
+  accessibility tree entirely.
+- **Except as the only label on a form input.** 3.3.2 Labels or Instructions (Level A) requires
+  a label or instruction sighted users can see; a hidden `<label>` or a bare `aria-label` on an
+  `<input>` satisfies 4.1.2 and still fails 3.3.2 when nothing visible says what to enter. A
+  visible heading, legend or adjacent text counts — so where one exists, prefer
+  `aria-labelledby` pointing at it over a hidden label. 3.3.2 belongs to `forms-errors`; hand it
+  over rather than clearing the field here.

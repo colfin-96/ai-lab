@@ -17,9 +17,14 @@ changed.
 2. **Verify the finding still stands.** Line numbers drift, and the code may have changed since
    the audit. If the violation is gone, mark the row `fixed`, say it was already resolved, and
    move on without editing anything.
-3. **Read the profile** before choosing an approach. The right fix in a repo with the Angular
-   CDK is different from the right fix without it, and a fix that ignores the repo's existing
-   helper will not survive review.
+3. **Read the profile, and the repo's accessibility convention if the profile names one**,
+   before choosing an approach. The right fix in a repo with the Angular CDK is different from
+   the right fix without it, and a fix that ignores the repo's existing helper will not survive
+   review. The fix must pass the convention's reviewer checklist, not only the playbook: where
+   the convention prescribes an order, a helper or a house rule, follow it, because that is the
+   checklist the PR will be reviewed against. Only where the convention is looser than WCAG 2.2
+   A + AA does the criterion win — and then say so, since the fix will look wrong to a reviewer
+   reading the convention.
 4. **Make the smallest change that resolves the criterion.** Resist the adjacent refactor. A
    focused diff gets merged; a sprawling one gets deferred, and a deferred fix helps nobody.
 5. **Do not change visible behaviour** unless the finding requires it. If it does — adding a
@@ -34,9 +39,19 @@ changed.
    difference between `aria-label="Delete"` and `aria-label="Delete invoice 4021"` is a product
    decision, and quietly guessing produces plausible text that silences the linter while
    leaving the user just as stuck.
+
+   **Draft through the repo's i18n, not as a literal.** When the profile records a translation
+   library, the draft is a translation key bound the way the repo binds keys —
+   `[attr.aria-label]="'invoice.actions.delete' | translate"`, not `aria-label="Delete"` — plus
+   the entry in each locale's key file, with the draft wording in the source locale and the other
+   locales marked as needing translation. Say which key files you touched or which still need the
+   entry. A hard-coded English name in a German UI is read with German pronunciation rules and
+   can itself fail SC 3.1.2 Language of Parts, so a literal is not a neutral placeholder. Only
+   with no i18n in the profile is a literal the right draft.
 8. **Update the ledger**: status `fixed`, and note what changed.
 
-When a finding cannot be fixed in code — it needs a design decision, a translated string, a
+When a finding cannot be fixed in code — it needs a design decision, a translation beyond the
+source-locale draft, a
 transcript, a backend change — do not force it. Say what is blocked and on whom, and leave the
 status `open`. A wrong fix that closes a finding is worse than an open one.
 

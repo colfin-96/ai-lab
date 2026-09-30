@@ -63,6 +63,20 @@ The profile records a date but is not self-invalidating. If it looks inconsisten
 you see — it says no Angular Material but you are reading `mat-` components — say so and
 suggest `/a11y init`. Do not silently audit against a profile you have reason to doubt.
 
+Then read the repo's own **accessibility convention**, if it has one — a rule file with a
+reviewer checklist that the repo's PR review already enforces. The profile records its path
+(`convention:`); when it says `none` or predates the field, check whether the repo's
+`AGENTS.md` / `CLAUDE.md` points at one anyway. An audit that contradicts the rules the same
+repo's review applies is worse than no audit: the developer gets two answers and trusts neither.
+
+- **Stricter or more specific than a playbook → the convention wins.** Its preferred helper, its
+  order for supplying a name, its house rules beyond the target are what a fix must meet.
+- **Looser than WCAG 2.2 A + AA → WCAG wins**, and the gap is itself a finding against the
+  convention (graded as in `references/report-format.md`). A repo rule cannot lower the target.
+- **Silent → the playbooks apply** as written.
+
+When a profile points at a convention that no longer exists, say so and suggest `/a11y init`.
+
 Load `references/regional/<code>.md` for each jurisdiction the profile lists. Multiple
 jurisdictions are normal for software sold in several markets; load them all and merge.
 A jurisdiction with no file yet is a research task, not a guess — see `init.md`.
@@ -127,8 +141,8 @@ and keyboard; two or more files touching the same pattern pull in consistency. M
 pull in media-alt. When genuinely unsure, run the member; a wasted Haiku call is cheaper than
 a missed Level A failure.
 
-Spawn the selected members in parallel. Each gets: the diff or target files, the profile, its
-own playbook path, `references/wcag-22.md`, `references/framework-notes.md`, any regional
+Spawn the selected members in parallel. Each gets: the diff or target files, the profile, the
+repo's accessibility convention when there is one, its own playbook path, `references/wcag-22.md`, `references/framework-notes.md`, any regional
 overlay, and the confirmed lint coverage so it knows what not to re-check.
 
 ## Step 4 — runtime, when it is cheap
@@ -146,14 +160,14 @@ real audit, it just says so in the footer.
 
 Read `references/report-format.md` for the finding card, the summary table and the ledger
 schema. In short: dedup across members, grade each finding on two independent axes
-(`AA-violation` vs `advisory`, and `critical`…`minor`), reconcile against the existing ledger
+(`AA-violation`, `convention` or `advisory`, and `critical`…`minor`), reconcile against the existing ledger
 so IDs stay stable, write the cards to `.claude/a11y/findings.md`, and echo the summary table.
 
 Two axes rather than one because they answer different questions: whether you are legally
 non-conformant, and how badly it hurts. A minor Level A failure still breaks the claim; a
 serious advisory issue still deserves attention. Collapsing them hides one or the other.
 
-The footer names the profile, the jurisdictions loaded, whether lint coverage was confirmed,
+The footer names the profile, the convention read (or `none`), the jurisdictions loaded, whether lint coverage was confirmed,
 whether the runtime arm ran, and — when a regional overlay applies — the obligations that
 cannot be checked from code at all. That last part matters: a code review cannot establish
 legal conformance, and a report that implies otherwise is worse than no report.
@@ -166,7 +180,7 @@ faster than missing one would.
 
 When this skill fires on its own while someone is mid-feature rather than being asked, run
 the light path: a single pass over just the code being touched, no member fan-out, no runtime
-arm. Stay silent when there is nothing to report — write to the ledger only if you actually
+arm — but still against the repo's convention when there is one. Stay silent when there is nothing to report — write to the ledger only if you actually
 find something, and close with one line pointing at `/a11y` for the full audit.
 
 The reasoning is simple: a seven-agent audit interrupting every template edit gets this skill

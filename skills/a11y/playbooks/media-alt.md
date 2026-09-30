@@ -84,7 +84,8 @@ are the things to find. `muted autoplay` is fine.
   usually unwanted noise. Inside a labelled button it wants `aria-hidden="true"`; standing alone
   as a control it needs a real accessible name. This is a frequent, low-visibility defect.
 - i18n: `alt` text needs translating like any other string. A hardcoded English `alt` in an
-  otherwise localised template is worth an `advisory`.
+  otherwise localised template is worth an `advisory`, or a `convention` finding when the repo's
+  accessibility convention requires translated strings.
 - SVG imported as a component or inlined via `innerHTML` bypasses template checks — note when
   you cannot see the SVG's internals.
 

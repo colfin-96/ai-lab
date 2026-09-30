@@ -69,9 +69,27 @@ approach will not. Search for `aria`, `a11y`, `focus`, `announce`, `visually-hid
 Recording these stops every future run from re-reporting the same accepted problems.
 
 **i18n** — `@angular/localize`, a translation library, or none; the locale set. Affects `lang`
-attribute handling and whether hardcoded strings in templates are a finding.
+attribute handling and whether hardcoded strings in templates are a finding. With a library,
+also record how a template reads a key (`'key.path' | translate`, `i18n` attributes, `$localize`)
+and where the key files live, one per locale — `fix` needs both to draft a name as a key rather
+than a literal.
 
 **Testing** — the test runner, and whether any a11y assertions already exist.
+
+**Accessibility convention** — whether the repo already writes down its own accessibility rules:
+a convention or guideline file with a rule and a reviewer checklist, which its PR review
+enforces. Look where the repo points its agents and reviewers first — `AGENTS.md`, `CLAUDE.md`,
+`CONTRIBUTING.md`, a `docs/` conventions or guidelines folder — then search file names and
+headings for `accessibility` / `a11y`. Record the path relative to the repo root:
+
+```
+convention: docs/accessibility.md (linked from AGENTS.md:42)
+```
+
+Every audit and fix reads it and defers to it where it is stricter than a playbook, so it is the
+line that keeps `/a11y` from contradicting the repo's own review. If there is none, record
+`convention: none` — **do not create one.** A convention is a team decision, and a profile
+states facts; writing rules for the team is not what `init` is for.
 
 ## What to ask
 
@@ -202,5 +220,5 @@ stating out loud instead of quietly assuming.
 
 ## Report
 
-Close by reporting what you detected, what you had to ask, what came back `unknown`, and the
-tracking state of both files.
+Close by reporting what you detected, what you had to ask, what came back `unknown`, the
+convention found (or `none`), and the tracking state of both files.

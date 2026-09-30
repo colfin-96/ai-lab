@@ -75,8 +75,10 @@ stop or hide control. Auto-playing carousels, marquees, animated backgrounds, li
 feeds, looping video. Motion beside text makes the text unreadable for many people, and there
 must be a way to stop it — not just a preference buried in settings.
 
-`prefers-reduced-motion` is the right companion habit and worth raising as `advisory`, but it
-does not substitute for a control: respecting the media query helps only users who have set it.
+`prefers-reduced-motion` is the right companion habit and worth raising as `advisory` — or as a
+`convention` finding when the repo's accessibility convention makes reduced motion a required
+rule — but it does not substitute for a control: respecting the media query helps only users
+who have set it.
 
 ## 2.3.1 Three Flashes or Below Threshold
 
