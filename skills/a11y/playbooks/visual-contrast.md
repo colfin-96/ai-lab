@@ -19,7 +19,10 @@ Be precise with the numbers and do not speculate beyond them.
 Contrast is computed from *rendered* colours. When you can only read source, you can still
 catch a great deal:
 
-- Both colours are literals or resolvable design tokens → compute the ratio and report it.
+- Both colours are literals or resolvable design tokens → compute the ratio and report it. A
+  literal where the repo otherwise uses tokens fails no criterion if the ratio holds, but it
+  will not follow a theme switch or a later palette fix: `advisory` in general, and a
+  `convention` finding when the repo's accessibility convention requires tokens.
 - A colour comes from a CSS variable, a theme, or a parent you cannot see → say the pair is
   unresolvable and name what you would need. An unverifiable finding stated as fact is worse
   than a clear "needs a rendered check".

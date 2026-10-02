@@ -49,8 +49,21 @@ loses whichever the reader needed.
 **Conformance** — is this a failure of the target?
 
 - `AA-violation` — fails a Level A or AA criterion. Blocks a WCAG 2.2 AA claim.
-- `advisory` — real accessibility problem, no criterion failed. Best practice, AAA, or a
-  regional obligation that is not a WCAG criterion.
+- `convention` — breaks a required rule in the repo's own accessibility convention, with no
+  Level A or AA criterion failed. Reduced motion, untranslated names and hard-coded colours are
+  typical: advisory in general, required once the repo says so. The `SC` column carries the
+  nearest criterion or `—`, and the card names the rule it breaks (file and section), because
+  "the convention says so" is what the reviewer will check against.
+- `advisory` — real accessibility problem, no criterion failed and no convention rule broken.
+  Best practice, AAA, or a regional obligation that is not a WCAG criterion.
+
+A playbook that calls something `advisory` means advisory *unless the convention requires it*;
+the convention decides. When a code change fails a criterion *and* a convention rule, it is an
+`AA-violation` — the stronger grade — and the card cites both.
+
+A convention that is looser than the target — it permits something a Level A or AA criterion
+forbids — gets its own finding: `AA-violation`, `File` pointing at the convention's line, `SC` the
+criterion it lets fail. Code that follows the rule fails the criterion, so the rule is the defect.
 
 **Impact** — how badly does it hurt someone?
 
@@ -76,6 +89,7 @@ Then the footer, which is not optional:
 
 ```
 Profile: .claude/a11y/profile.md (2026-08-11) · Jurisdictions: DE, US
+Convention: docs/accessibility.md — read, 1 finding against its rules
 Lint: @angular-eslint accessibility preset confirmed active — 11 rules, 2 findings
 Runtime: axe via dev server on :4200 — 1 finding
 Members: semantics-aria, keyboard-focus, visual-contrast (skipped: media-alt, forms-errors,
@@ -84,7 +98,7 @@ Not checkable from code: see references/regional/de.md § Not checkable here
 ```
 
 Every line of that footer exists to stop a specific misreading — that the profile is current,
-that the linter really ran, that the runtime arm was used, that unlisted members were skipped
+that the audit applied the repo's own rules (or that there were none to apply), that the linter really ran, that the runtime arm was used, that unlisted members were skipped
 on purpose, and that this is a code review rather than a conformance certificate.
 
 When the profile is not tracked — the repo ignores `.claude` and the user declined the
@@ -130,6 +144,8 @@ Field notes:
   does. "Violates 2.5.7" is not an impact. "Cannot resize the panel at all" is.
 - **Fix** should be specific enough to act on and should say what stays. Fixes that read like
   rewrites get deferred forever.
+- **Rule** — only on `convention` findings, and on `AA-violation` findings that also break one:
+  the convention file and section, e.g. `**Rule** docs/accessibility.md § Accessible names`.
 - **Source** is `eslint` (with the rule id) or `ai` (with the member name). Worth recording
   because it tells the next reader how much to trust it: a linter finding is deterministic, a
   member finding is judgement.

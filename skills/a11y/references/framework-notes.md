@@ -51,6 +51,25 @@ Web components need `aria-label` or delegated internals instead.
 does nothing on a plain element — it looks correct in review and fails at runtime. This is worth
 searching for directly.
 
+**`[attr.aria-label]` on a component names its host, not its control.** On a third-party wrapper
+the host tag (`<lib-button>`) usually has no role; the real `<button>` or `<input>` is inside
+its template. An `aria-label` on a role-less host names nothing and fails 4.1.2 while looking
+correct in review. Supply a name in this order, taking the first that applies:
+
+1. **The component's own aria input** — the library's documented `ariaLabel` /
+   `ariaLabelledBy`-style input, which it forwards to the inner element.
+2. **`[attr.aria-label]` / `[attr.aria-labelledby]` on a native element** you render yourself —
+   `button`, `input`, `section`, `fieldset`.
+3. **The library's pass-through to an inner element**, for a component with no aria input: a
+   pass-through or slot-props API that sets attributes on a named inner part. Check the key in the
+   rendered DOM — a wrong part name is silently ignored.
+4. **`aria-labelledby` pointing at a visible heading** on a wrapper you own, in preference to a
+   visually hidden label.
+
+PrimeNG shows the shape: `ariaLabel` on `p-button` is step 1, its `pt` pass-through is step 3.
+Other libraries name these differently; the order is the rule, not the input names. Whatever the
+route, inspect the rendered DOM to confirm the name landed on the element that has the role.
+
 **Names may live in TypeScript.** `@HostBinding('attr.aria-label')`, a directive, or a base
 class can supply what the template appears to be missing. Check the class before reporting.
 
@@ -79,8 +98,15 @@ across screen readers, and "use the CDK primitive" is a fix that gets merged.
 | Declarative live region | `cdkAriaLive` |
 | Know *how* focus arrived | `FocusMonitor` / `cdkMonitorElementFocus` / `cdkMonitorSubtreeFocus`, emitting `FocusOrigin` (`mouse`, `keyboard`, `touch`, `program`); applies `.cdk-focused`, `.cdk-keyboard-focused` and friends |
 | Test whether an element is really focusable | `InteractivityChecker` |
-| Hide visually, keep for assistive tech | `.cdk-visually-hidden`, via the `a11y-visually-hidden` Sass mixin |
+| Hide visually, keep for assistive tech | the repo's own visually-hidden class first; `.cdk-visually-hidden` only when CDK a11y styles are confirmed loaded (see below) |
 | Style for forced-colors / high-contrast mode | the `high-contrast` Sass mixin |
+
+**`.cdk-visually-hidden` is not always styled.** Its CSS is not global: the CDK injects it at
+runtime only once one of its a11y services loads it, or the app ships it through the
+`a11y-visually-hidden` Sass mixin or the prebuilt CDK a11y CSS. A template that uses the class
+without any of those renders the "hidden" text visibly. So recommend the class recorded under the
+profile's "In-house a11y utilities" (`sr-only`, `visually-hidden` or the like) first, and
+`.cdk-visually-hidden` only when the repo is confirmed to load its styles.
 
 `FocusMonitor` deserves special mention: it is the principled answer to "show the focus ring for
 keyboard but not mouse", better than juggling `:focus-visible` fallbacks when the origin is
@@ -119,7 +145,9 @@ invalid themselves; the interface only carries values.
 
 With `@angular/localize` or a translation library, `<html lang>` must follow the active locale
 rather than being hardcoded. Hardcoded user-facing strings in a localised app — including `alt`
-text and `aria-label` values — are worth an `advisory`. And the same action reached through two
+text and `aria-label` values — are worth an `advisory`, a `convention` finding when the repo's
+accessibility convention requires translated names, and an `AA-violation` of 3.1.2 when the
+literal's language differs from the page's and nothing marks it. And the same action reached through two
 different translation keys is a latent 3.2.4 inconsistency: the moment one key's text is edited,
 they diverge.
 
