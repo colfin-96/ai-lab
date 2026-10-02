@@ -76,7 +76,7 @@ profile confirms that rule genuinely runs here, and even then the quality half s
 | 3.3.1 | Error Identification | A | 2.0 | `forms-errors` | — | the form failed but does not say which field or why |
 | 3.3.2 | Labels or Instructions | A | 2.0 | `forms-errors` | `label-has-associated-control` (association only) | a field with no label leaves the user guessing what to type |
 | 3.3.3 | Error Suggestion | AA | 2.0 | `forms-errors` | — | the error says "invalid" without saying what would be valid |
-| 3.3.4 | Error Prevention (Legal, Financial, Data) | AA | 2.0 | `forms-errors` | — | an irreversible submission offers no review, confirmation or undo |
+| 3.3.4 | Error Prevention (Legal, Financial, Data) | AA | 2.0 | `forms-errors` | — | a legal commitment, financial transaction, change or delete of stored user data, or test-response submission offers no undo, error check or confirmation; not other destructive actions |
 | 3.3.7 | Redundant Entry | A | 2.2 | `forms-errors` | — | the same information must be re-entered from memory later in the same flow |
 | 3.3.8 | Accessible Authentication (Minimum) | AA | 2.2 | `forms-errors` | — | logging in demands solving a puzzle or recalling a code, with no alternative |
 | 4.1.2 | Name, Role, Value | A | 2.0 | `semantics-aria` | `valid-aria`, `role-has-required-aria`, `elements-content` (validity only, never name quality) | a custom control announces as "clickable" with no name, role or state |

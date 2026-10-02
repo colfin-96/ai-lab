@@ -95,10 +95,26 @@ options triggers a submit on every one.
 
 ## 3.3.4 Error Prevention (Legal, Financial, Data)
 
-For submissions that are legally binding, financial, or delete/modify user data, one of:
-reversible, checked with a chance to correct, or confirmed before finalising. Look for
-irreversible destructive actions with no confirmation, and for payment or contract steps with
-no review.
+Applies only to pages that do one of three things:
+
+1. cause a legal commitment or a financial transaction (contract, order, payment, transfer);
+2. modify or delete user-controllable data in a data storage system (saved records, account
+   data, uploaded files — not unsaved client-side state);
+3. submit the user's responses to a test.
+
+For those submissions, at least one of: reversible, checked for input errors with a chance to
+correct, or confirmed (review step or confirmation) before finalising. Look for a payment,
+contract, stored-data delete or overwrite, or test submission that commits on a single
+activation with no undo, no review and no confirmation.
+
+It does not cover destructive actions in general. Closing a panel, resetting a filter, clearing
+a form or removing an unsaved row is not a 3.3.4 finding, however hard it is to undo — never
+cite 3.3.4 for it.
+
+**Best practice (not a WCAG criterion):** an action that discards real user effort outside those
+three triggers — clearing a long form, removing an unsaved row with typed content, closing a
+dirty editor — benefits from a confirmation or an undo. Grade it `advisory` with `SC` `—`, or
+`convention` when the repo's accessibility convention requires it; never `AA-violation`.
 
 ## Angular specifics
 
