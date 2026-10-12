@@ -1,0 +1,114 @@
+/* Action outline styles. Track colours are --c1..--c8, applied with classes .t1 to .t8. Layout: one action outline per component. Ingredients down the left, one column per step, each step box spans the rows of every ingredient it touches. */
+:root {
+  --bg: #f4f6f3;
+  --panel: #ffffff;
+  --fg: #1c2520;
+  --muted: #56615a;
+  --line: #d3dad4;
+  --c1: #c48316;
+  --c2: #3b8a4b;
+  --c3: #5f7fa3;
+  --c4: #c24a3a;
+  --c5: #8567ad;
+  --c6: #2f8a86;
+  --c7: #a65e86;
+  --c8: #8a6d4b;
+    --shared: #56615a;
+  --font: "DM Sans", system-ui, sans-serif;
+  --mono: "DM Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121714;
+    --panel: #1a211d;
+    --fg: #e6ebe7;
+    --muted: #9aa69e;
+    --line: #2f3a33;
+    --c1: #e0a53c;
+    --c2: #66bb77;
+    --c3: #86a6cb;
+    --c4: #e5786a;
+    --c5: #aa8fd1;
+    --c6: #5fc3bd;
+    --c7: #d08bb0;
+    --c8: #c9a679;
+    --shared: #9aa69e;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121714;
+  --panel: #1a211d;
+  --fg: #e6ebe7;
+  --muted: #9aa69e;
+  --line: #2f3a33;
+  --c1: #e0a53c;
+  --c2: #66bb77;
+  --c3: #86a6cb;
+  --c4: #e5786a;
+  --c5: #aa8fd1;
+  --c6: #5fc3bd;
+  --c7: #d08bb0;
+  --c8: #c9a679;
+  --shared: #9aa69e;
+  color-scheme: dark;
+}
+body { background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 15px; line-height: 1.45; padding-inline: 16px; padding-block: 24px 40px; }
+.page { max-width: 78rem; margin-inline: auto; display: flex; flex-direction: column; gap: 20px; }
+h1 { margin: 0; font-size: clamp(1.7rem, 4vw, 2.4rem); font-weight: 700; letter-spacing: -0.02em; text-wrap: balance; }
+h2 { margin: 0 0 8px; font-size: 1.15rem; font-weight: 700; }
+.sub { margin: 4px 0 0; color: var(--muted); }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 13px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; background: var(--c); }
+.wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+table { border-collapse: collapse; min-width: 44rem; width: 100%; }
+th, td { border: 1px solid var(--line); padding: 8px 10px; vertical-align: top; text-align: left; }
+thead th { background: var(--panel); font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 500; }
+td.a { font-family: var(--mono); font-size: 13px; white-space: nowrap; border-left: 4px solid var(--g); }
+td.i { font-weight: 500; }
+td.p { color: var(--muted); font-size: 14px; }
+td.a, td.i, td.p { background: color-mix(in srgb, var(--g) 9%, var(--panel)); }
+td.s { background: color-mix(in srgb, var(--g) 20%, var(--panel)); font-size: 14px; }
+td.s b { display: block; font-weight: 700; }
+td.s span { color: var(--muted); font-size: 13px; }
+td.f { background: var(--panel); }
+td.pre { background: color-mix(in srgb, var(--shared) 14%, var(--panel)); font-size: 14px; }
+/* Short step labels on tall spans run sideways to save width. The detail span becomes a hover and focus tooltip, opening to the left so the scroll container never clips it. */
+td.v { position: relative; writing-mode: vertical-rl; text-align: center; vertical-align: middle; padding: 10px 6px; cursor: help; }
+td.v b { display: inline; }
+td.v .d { position: absolute; right: 100%; top: 50%; transform: translateY(-50%); writing-mode: horizontal-tb; text-align: left; width: 14rem; padding: 8px 10px; background: var(--panel); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 4px 14px rgb(0 0 0 / 0.18); opacity: 0; pointer-events: none; z-index: 2; }
+td.v:hover .d, td.v:focus .d { opacity: 1; }
+.t1 { --g: var(--c1); }
+.t2 { --g: var(--c2); }
+.t3 { --g: var(--c3); }
+.t4 { --g: var(--c4); }
+.t5 { --g: var(--c5); }
+.t6 { --g: var(--c6); }
+.t7 { --g: var(--c7); }
+.t8 { --g: var(--c8); }
+.flow { overflow-x: auto; padding-block: 4px; }
+/* Inline SVG, no script. Time runs left to right; shapes in one column happen at the same time. Chips are real links, coloured from the page tokens. */
+.flow svg { display: block; max-width: none; font-family: var(--font); }
+.flow .wire { fill: none; stroke: var(--muted); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.flow .head { fill: var(--muted); }
+.flow .band { fill: color-mix(in srgb, var(--shared) 14%, transparent); }
+.flow .cap { fill: var(--muted); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
+.flow .node rect.bg { fill: color-mix(in srgb, var(--g) 12%, var(--panel)); stroke: var(--line); }
+.flow .node rect.bar { fill: var(--g); }
+.flow .node text { fill: var(--fg); font-size: 13px; font-weight: 500; }
+.flow .node:hover rect.bg { fill: color-mix(in srgb, var(--g) 26%, var(--panel)); }
+.flow .node:focus-visible { outline: 2px solid var(--c2); outline-offset: 2px; }
+.chip { display: inline-flex; align-items: center; min-height: 24px; padding: 2px 10px; border: 1px solid var(--line); border-left: 4px solid var(--g); border-radius: 6px; background: color-mix(in srgb, var(--g) 12%, var(--panel)); color: var(--fg); font-size: 13px; font-weight: 500; line-height: 1.3; text-decoration: none; white-space: nowrap; }
+.chip:hover { background: color-mix(in srgb, var(--g) 26%, var(--panel)); }
+.together { display: flex; flex-direction: column; gap: 20px; padding: 14px 14px 16px; border: 2px dashed var(--shared); border-radius: 14px; }
+.together > .label { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 0 0 10px; color: var(--muted); font-size: 13px; }
+.meta b { color: var(--fg); font-weight: 500; }
+tr.carry td.a { border-left-style: dashed; }
+.notes { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); }
+.note { border: 1px solid var(--line); background: var(--panel); border-radius: 10px; padding: 14px 16px; min-width: 0; }
+.note h2 { margin: 0 0 6px; font-size: 15px; }
+.note p { margin: 0; color: var(--muted); font-size: 14px; }
+:focus-visible { outline: 2px solid var(--c2); outline-offset: 2px; }
+
