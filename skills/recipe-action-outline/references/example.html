@@ -1,0 +1,180 @@
+<title>Karaage Donburi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=DM+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: an action outline. Ingredients down the left, one column per step, each step box spans the rows of every ingredient it touches. */
+:root {
+  --bg: #f4f6f3;
+  --panel: #ffffff;
+  --fg: #1c2520;
+  --muted: #56615a;
+  --line: #d3dad4;
+  --chicken: #c48316;
+  --veg: #3b8a4b;
+  --rice: #5f7fa3;
+  --cream: #c24a3a;
+  --top: #8567ad;
+  --shared: #56615a;
+  --font: "DM Sans", system-ui, sans-serif;
+  --mono: "DM Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121714;
+    --panel: #1a211d;
+    --fg: #e6ebe7;
+    --muted: #9aa69e;
+    --line: #2f3a33;
+    --chicken: #e0a53c;
+    --veg: #66bb77;
+    --rice: #86a6cb;
+    --cream: #e5786a;
+    --top: #aa8fd1;
+    --shared: #9aa69e;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121714;
+  --panel: #1a211d;
+  --fg: #e6ebe7;
+  --muted: #9aa69e;
+  --line: #2f3a33;
+  --chicken: #e0a53c;
+  --veg: #66bb77;
+  --rice: #86a6cb;
+  --cream: #e5786a;
+  --top: #aa8fd1;
+  --shared: #9aa69e;
+  color-scheme: dark;
+}
+body { background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 15px; line-height: 1.45; padding-inline: 16px; padding-block: 24px 40px; }
+.page { max-width: 78rem; margin-inline: auto; display: flex; flex-direction: column; gap: 20px; }
+h1 { margin: 0; font-size: clamp(1.7rem, 4vw, 2.4rem); font-weight: 700; letter-spacing: -0.02em; text-wrap: balance; }
+.sub { margin: 4px 0 0; color: var(--muted); }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 13px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; background: var(--c); }
+.wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+table { border-collapse: collapse; min-width: 62rem; width: 100%; }
+th, td { border: 1px solid var(--line); padding: 8px 10px; vertical-align: top; text-align: left; }
+thead th { background: var(--panel); font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 500; position: sticky; top: 0; }
+td.a { font-family: var(--mono); font-size: 13px; white-space: nowrap; border-left: 4px solid var(--g); }
+td.i { font-weight: 500; }
+td.p { color: var(--muted); font-size: 14px; }
+td.a, td.i, td.p { background: color-mix(in srgb, var(--g) 9%, var(--panel)); }
+td.s { background: color-mix(in srgb, var(--g) 20%, var(--panel)); font-size: 14px; }
+td.s b { display: block; font-weight: 700; }
+td.s span { color: var(--muted); font-size: 13px; }
+td.f { background: var(--panel); }
+td.sh { background: color-mix(in srgb, var(--shared) 14%, var(--panel)); font-size: 14px; }
+td.sh b { display: block; font-weight: 700; margin-bottom: 4px; }
+.chicken { --g: var(--chicken); }
+.veg { --g: var(--veg); }
+.rice { --g: var(--rice); }
+.cream { --g: var(--cream); }
+.top { --g: var(--top); }
+.notes { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); }
+.note { border: 1px solid var(--line); background: var(--panel); border-radius: 10px; padding: 14px 16px; min-width: 0; }
+.note h2 { margin: 0 0 6px; font-size: 15px; font-weight: 700; }
+.note p { margin: 0; color: var(--muted); font-size: 14px; }
+:focus-visible { outline: 2px solid var(--veg); outline-offset: 2px; }
+</style>
+
+<main class="page">
+  <header>
+    <h1>Karaage Donburi</h1>
+    <p class="sub">Serves 4 · meal-prep batch for 3 working days · oven, microwave and fridge at the office</p>
+  </header>
+
+  <div class="legend" aria-label="Colour key">
+    <span style="--c: var(--chicken)"><i></i>Chicken</span>
+    <span style="--c: var(--veg)"><i></i>Veg</span>
+    <span style="--c: var(--rice)"><i></i>Rice</span>
+    <span style="--c: var(--cream)"><i></i>Chili cream</span>
+    <span style="--c: var(--top)"><i></i>Toppings</span>
+    <span style="--c: var(--shared)"><i></i>All together</span>
+  </div>
+
+  <div class="wrap">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Amount</th><th scope="col">Ingredient</th><th scope="col">Prep</th>
+          <th scope="col">Step 1</th><th scope="col">Step 2</th><th scope="col">Step 3</th>
+          <th scope="col">Step 4</th><th scope="col">Step 5</th><th scope="col">Step 6</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- chicken -->
+        <tr class="chicken">
+          <td class="a">700 g</td><td class="i">chicken thigh, boneless</td><td class="p">cut in bite-size chunks</td>
+          <td class="s chicken" rowspan="5"><b>Marinate</b><span>20 min</span></td>
+          <td class="s chicken" rowspan="6"><b>Coat in starch</b><span>shake off the excess</span></td>
+          <td class="s chicken" rowspan="7"><b>Bake</b><span>200 °C fan, 18–20 min, turn once. Core at least 75 °C</span></td>
+          <td class="sh" rowspan="19"><b>Cool and pack</b>Let everything cool 15 min. Per box: veg, rice and sweetcorn in one compartment, chicken in another, chili cream and spring onion in small pots.</td>
+          <td class="sh" rowspan="19"><b>Label and chill</b>Write the cook date on each box. Fridge, eat within 3 days.</td>
+          <td class="sh" rowspan="19"><b>At the office</b>Chicken in the oven, 180 °C, 8–10 min (not the microwave, it goes soggy). Rice and veg in the microwave. Then add chili cream, spring onion and sesame.</td>
+        </tr>
+        <tr class="chicken"><td class="a">4 tbsp</td><td class="i">soy sauce</td><td class="p"></td></tr>
+        <tr class="chicken"><td class="a">1 tbsp</td><td class="i">mirin</td><td class="p"></td></tr>
+        <tr class="chicken"><td class="a">2 tsp</td><td class="i">fresh ginger</td><td class="p">grate</td></tr>
+        <tr class="chicken"><td class="a">2 cloves</td><td class="i">garlic</td><td class="p">mince</td></tr>
+        <tr class="chicken">
+          <td class="a">4–5 tbsp</td><td class="i">potato starch</td><td class="p"></td>
+          <td class="f"></td>
+        </tr>
+        <tr class="chicken">
+          <td class="a">spray</td><td class="i">oil</td><td class="p">light coat on the tray</td>
+          <td class="f" colspan="2"></td>
+        </tr>
+
+        <!-- veg -->
+        <tr class="veg">
+          <td class="a">400 g</td><td class="i">broccoli</td><td class="p">cut in florets</td>
+          <td class="s veg" rowspan="5"><b>Toss</b><span>coat everything in soy, oil and chili</span></td>
+          <td class="s veg" rowspan="5"><b>Preheat oven</b><span>200 °C fan</span></td>
+          <td class="s veg" rowspan="5"><b>Roast on a second tray</b><span>20 min, stir once</span></td>
+        </tr>
+        <tr class="veg"><td class="a">3 (300 g)</td><td class="i">carrots</td><td class="p">cut in sticks</td></tr>
+        <tr class="veg"><td class="a">1 tbsp</td><td class="i">soy sauce</td><td class="p"></td></tr>
+        <tr class="veg"><td class="a">1 tbsp</td><td class="i">oil</td><td class="p"></td></tr>
+        <tr class="veg"><td class="a">1 pinch</td><td class="i">chili flakes</td><td class="p"></td></tr>
+        <tr class="veg">
+          <td class="a">300 g</td><td class="i">frozen sweetcorn</td><td class="p">keep frozen, add at packing</td>
+          <td class="f" colspan="3"></td>
+        </tr>
+
+        <!-- rice -->
+        <tr class="rice">
+          <td class="a">200 g</td><td class="i">rice</td><td class="p">rinse until the water runs clear</td>
+          <td class="s rice" colspan="2"><b>Cook</b><span>12–15 min</span></td>
+          <td class="s rice"><b>Spread out</b><span>on a tray to cool fast</span></td>
+        </tr>
+
+        <!-- chili cream -->
+        <tr class="cream">
+          <td class="a">4 tbsp</td><td class="i">Greek yoghurt or mayo</td><td class="p"></td>
+          <td class="s cream" rowspan="3"><b>Mix and chill</b><span>taste, add more sriracha if wanted</span></td>
+          <td class="f" colspan="2" rowspan="3"></td>
+        </tr>
+        <tr class="cream"><td class="a">1–2 tsp</td><td class="i">sriracha</td><td class="p"></td></tr>
+        <tr class="cream"><td class="a">½</td><td class="i">lime</td><td class="p">squeeze</td></tr>
+
+        <!-- toppings -->
+        <tr class="top">
+          <td class="a">3</td><td class="i">spring onions</td><td class="p">slice thin</td>
+          <td class="s top" rowspan="2"><b>Keep dry</b><span>separate from the box until eating</span></td>
+          <td class="f" colspan="2" rowspan="2"></td>
+        </tr>
+        <tr class="top"><td class="a">1 tbsp</td><td class="i">sesame seeds</td><td class="p"></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <section class="notes" aria-label="Notes">
+    <div class="note"><h2>Veg plan</h2><p>Week 1: broccoli, carrot, sweetcorn. Week 2: add bell pepper. Week 3: add green beans. Peas can go in any week. Sweetcorn stays in every box as the safe veg.</p></div>
+    <div class="note"><h2>Plate proportions</h2><p>Aim for half veg, a quarter chicken (150–180 g raw), a quarter cooled rice (120–150 g cooked). Start with about a third veg and grow it.</p></div>
+    <div class="note"><h2>Batches</h2><p>Sunday for Monday to Wednesday, Thursday for Thursday and Friday. Cooked chicken and rice keep about 3 days in the fridge.</p></div>
+  </section>
+</main>
