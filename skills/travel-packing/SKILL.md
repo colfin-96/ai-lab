@@ -201,8 +201,16 @@ currently taking or likely to need any meds for this trip, and reflect their ans
 - Dressing Gown — take if driving or there's clearly enough luggage space; skip if
   flying light or short trip.
 - Sun Glasses — summer, and especially if driving.
-- Shaver + Charger — 5+ day trips.
-- Nail Clippers, Tooth Floss — 5+ day trips.
+- Compression Socks + Blue Helper Thing — driven by **long seated travel days, not long
+  flights**. A day that stacks a drive, a flight and another drive can total five or six
+  hours sitting even when no single leg is long. Count them separately from the sock
+  quantities; the helper (a donning aid) is small enough to live in the rucksack.
+- Tooth Floss — 5+ day trips.
+- Shaver + Charger — **usually skip.** The user doesn't shave often, so even a two-week
+  trip frequently goes without. Include only if the trip has a reason to look sharp
+  (business, a wedding, formal evenings).
+- Nail Clippers — **usually skip.** The user cuts their nails the morning of departure,
+  which comfortably covers a fortnight. Only worth packing for trips beyond ~2 weeks.
 - Powerbank + Cable — long transit (especially flying), or photo-heavy event days out
   with no charging.
 - Headphones + Case — take if there's space; usual on flights/trains.
@@ -213,14 +221,46 @@ currently taking or likely to need any meds for this trip, and reflect their ans
 - Laptop + Charger — take when there's space, for the translation side business.
 - Keyboard + Mouse — seldom; only if the laptop use and luggage space justify it.
 - Tablet — rarely; nice for watching a film on long transit.
-- Sun cream, Cap/hat — summer / sunny / lots of sun exposure.
+- Sun cream — summer / sunny / any real sun exposure. See the volume note below; a
+  100 ml travel size is a day-one stopgap, not a trip's supply.
+- Cap/hat — **usually skip.** The user's habit is to seek shade rather than pack sun gear.
+  Offer it only when the trip has unavoidable, sustained sun with no shade available
+  (an outdoor festival, a boat day, hiking above the treeline).
 - Hand Sanitizer — when driving.
 - Books — if there'll be downtime to read.
 - Passport — only when leaving the Schengen area.
+- **Rental car documents — whenever a car is booked.** These are packing items, and a
+  missing one means no car. Add as explicit checklist entries: the **original physical
+  driving licence** (not a copy, photo or digital licence), the Personalausweis or
+  passport in original, the voucher (digital is normally fine), and a **credit card in
+  the main driver's name, with PIN**. Debit, EC/Giro (Maestro, V-Pay), prepaid, Visa
+  Electron, Apple Pay and Google Pay are routinely refused at rental desks, and a refused
+  card counts as a no-show — the booking is lost and non-refundable. Deposits run to
+  four figures (€1,000–1,500 is typical), so also prompt the user to check the card's
+  available limit covers the hold on top of holiday spending.
 
 **Rarely take:**
 
 - Swimming Trunks — only if a pool / beach / swim is actually planned.
+- Hair Dryer — effectively never. It costs around half a kilo, and hotels and
+  apartments reliably provide one. Strike it with that reason rather than debating.
+
+**Rain gear — offer, don't assume.** The user is fairly tolerant of a soaking and will
+often choose to risk a wet day rather than carry a jacket, especially when luggage is
+tight. Suggest a packable waterproof when rain is genuinely likely, but treat a decision
+to go without as normal rather than pushing back.
+
+**Buying at the destination is a real option.** The user is comfortable filling gaps
+after arrival rather than packing for every eventuality — sandals, sun cream, shower gel,
+a cheap jumper. When an item is bulky, heavy, missing from their kit, or only needed for
+part of the trip, offer "buy it there" as an explicit alternative to packing it. This is
+especially worth doing for anything that would otherwise force a bigger bag.
+
+**Sun cream volume.** Proper coverage is about **35 ml per adult per application**
+(the teaspoon rule), reapplied roughly every two hours. So 100 ml is around one beach
+morning for one person, and less than a morning for a group. For a sun-heavy trip,
+work out a realistic total — people × sun days × ~50 ml is a reasonable planning
+figure — and then decide between carrying a big bottle and buying on arrival.
 
 Weather can still add items beyond the master (water bottle for a hot day out,
 waterproof for rain) — annotate those as additions, as in the reference.
@@ -233,15 +273,71 @@ from this fixed kit, don't invent others:
 - **Rucksack** — smallest. Comfortable for 1–2 nights; stretches to ~4 at a push but
   then it's full of clothes with no room for toiletries. Also the user's usual day bag
   and plane personal item.
-- **Green case (small)** — mid-size wheeled case; goes in the cabin as hand luggage.
-  The workhorse for roughly 3–7 night trips.
+- **Green case (small)** — mid-size wheeled case, **55 × 40 × 20 cm**; goes in the cabin
+  as hand luggage. The workhorse for roughly 3–7 night trips.
 - **Large suitcase** — rarely used; only for ~2 weeks+ or intercontinental trips.
 
-**Liquids are a space note, not a carrier rule.** Any bag carried into the cabin hits
-the airport 100ml liquid limit — it's the same for rucksack and green case. So when
-flying, note "decant liquids to <100ml or buy on arrival" regardless of which bag.
-The real difference between bags is **volume**: the rucksack simply runs out of room
-for toiletries once clothes fill it.
+**Check the airline's cabin allowance against those measurements before recommending a
+bag.** The green case at 55 × 40 × 20 is the standard European cabin size, free or
+fare-included on most carriers — but **budget airlines price it as a paid add-on** and
+give away only a much smaller under-seat bag. On Ryanair the free personal bag is
+**40 × 30 × 20 cm** (~24 L) and the 55 × 40 × 20 bag needs "Priority und 2
+Handgepäckstücke" (also shown as "Priority und 10-kg-Handgepäckstück"), which carries a
+**10 kg** limit. So on a Ryanair booking the green case flies only if Priority or a
+checked bag is bought. Ask, or ask the user to check the booking, rather than assuming
+either way — a "GEBUCHT" marker means it's already paid for. The user normally does book
+Priority.
+
+**When a weight cap applies, weight becomes the binding limit, not volume — and the
+under-seat bag is usually the escape valve.** Ryanair publishes a size for the small bag
+but *no weight limit* (they describe it as "eine Handtasche oder Laptoptasche"). So put
+everything dense and small in the rucksack — laptop, tablet, chargers, powerbank,
+adapters, headphones, documents, a book — and reserve the weighed case for clothes.
+
+**Wear the bulk.** Walking shoes and a jumper worn on the plane cost nothing against
+either allowance and are the two bulkiest items on a typical list. Say so explicitly in
+the note.
+
+**Long trip under a tight cap means laundry, and it should be stated.** Two weeks in
+10 kg is only possible with a wash mid-trip. Identify the longest stay as the laundry
+window, scale the quantities to that, and say plainly that a launderette is the fallback
+if the accommodation has no machine.
+
+**Travel companions share the load.** When others are on the trip with their own
+allowances, one bottle of sun cream, one toothpaste and one tube of aftersun between the
+group beats a set each. Mention it — it's the cheapest space win available.
+
+**Liquids are a space note, not a carrier rule.** The limit is set by the airport, not by
+which bag you carry it in — a rucksack and a cabin case face identical rules. The real
+difference between bags is **volume**: the rucksack simply runs out of room for
+toiletries once clothes fill it.
+
+**Never assume the 100 ml rule. Check each departure airport.** Many European airports
+have installed EU-approved CT/C3 scanners and now allow containers up to **2 litres**,
+left inside the bag, with no clear plastic bag needed. Plenty of others still enforce the
+old 100 ml + 1 L clear bag rule. The two sit side by side, so this has to be looked up
+per airport, per trip — web-search each one by name.
+
+**On a multi-leg trip, the strictest departure airport governs the whole trip**, because
+anything carried from the start has to clear every checkpoint along the way. Build a
+small table of departure airport → rule, identify the tightest, and plan the toiletries
+around that one. Note that only *departure* airports screen you; arrival airports are
+irrelevant.
+
+Where a strict airport sits mid-trip, the useful moves are:
+
+- Travel in 100 ml sizes throughout and skip the problem entirely.
+- Or carry full sizes on the permissive legs, then buy locally and deliberately use up
+  or leave behind anything oversized before the strict leg.
+- Duty-free liquids bought *after* security in a sealed STEB bag are allowed on board
+  even at 100 ml airports — useful for souvenir wine or spirits.
+- If a checked bag is in play, it removes the liquid question completely, which is
+  sometimes a stronger argument for checking a bag than the weight is.
+
+**Only genuine liquids, aerosols and gels (LAGs) count.** Pastes and waxes — hair wax,
+toothpaste, sun cream — count. Truly solid items don't, so a stick deodorant instead of
+a roll-on keeps one item out of the bag. Security judges the container's **printed
+capacity, not how full it is**: a half-empty 150 ml tub is still refused.
 
 **Primary carrier — pick from the nights × available-space grid.** "Space" is set by
 travel mode *and*, when driving, by the vehicle's boot:
