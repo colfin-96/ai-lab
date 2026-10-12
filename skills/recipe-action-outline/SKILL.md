@@ -15,6 +15,7 @@ A recipe is never one big grid. Like Cooking for Engineers, split it into **one 
 |---|---|
 | `assets/outline.css` | All styling: light and dark tokens, track colours `--c1`..`--c8` (classes `.t1`..`.t8`), table, sideways tooltip cells, chips, flow diagram, note cards. Never edit per recipe. |
 | `scripts/build_page.js` | `node scripts/build_page.js body.html out.html` wraps a body fragment into a full page (title from the first `<h1>`, fonts, `outline.css` inlined), then runs the checker. |
+| `scripts/build_note.js` | `node scripts/build_note.js body.html note.md --snippet action-outline.css` writes an Obsidian note (frontmatter, title, one HTML block) and the scoped CSS snippet, then runs the checker. See Obsidian below. |
 | `scripts/check_grid.js` | `node scripts/check_grid.js page.html` checks every table's span arithmetic and every `href="#id"`. Exit 1 with `table N, row R` on failure. Node, no dependencies. |
 | `references/karaage.body.html` | Worked example, three outlines that run at the same time and merge at the end. Copy this for simple recipes. |
 | `references/wellington.body.html` | Worked example, four outlines in a chain with a parallel pair, carried-over rows, tall sideways steps. Copy this for complex recipes. |
@@ -46,8 +47,27 @@ You write only a **body fragment** (`<main class="page">…</main>`), never the 
    Fix every reported `table N, row R` problem and rerun until `OK`. The checker decides, not a visual guess.
 8. **Deliver.**
    - Default: publish `recipe.html` as an Artifact (title = recipe name, icon `recipe`). Each table sits in an `overflow-x: auto` wrapper, so phones scroll sideways inside the table, not the page.
-   - For Obsidian: put the headings and `<table>` blocks (no CSS) into the note. Obsidian renders HTML tables with `rowspan` in reading view. Sideways cells and tooltips need the CSS, so use horizontal text with the detail inline there.
+   - For Obsidian, see the next section.
 9. **Offer** one follow-up: save the tables into the recipe note, or adjust steps.
+
+## Obsidian
+
+Obsidian renders HTML tables with `rowspan`, so outlines work in reading view, but it strips `<style>` tags from notes. Styling therefore lives in a CSS snippet, and the note holds plain HTML.
+
+1. Build both files:
+   ```bash
+   node scripts/build_note.js recipe.body.html Recipe.md --snippet action-outline.css
+   ```
+   `Recipe.md` is frontmatter (`tags: [cooking]`), a `# title` heading and one `<div class="ao">` HTML block with no blank lines (a blank line ends an HTML block in Markdown). To add an outline to an existing note instead, paste only the `<div class="ao">…</div>` block under its own `## Action outline` heading.
+2. Install the snippet once per vault as `<vault>/.obsidian/snippets/action-outline.css`, then enable it under Settings > Appearance > CSS snippets (reload the list if it is missing). The snippet is scoped under `.ao`, follows Obsidian's own light and dark theme, uses the Obsidian font, and does not touch other notes. Regenerate and copy it again whenever `assets/outline.css` changes.
+3. Open the note in **Reading view**. In editing view Obsidian shows the raw HTML.
+
+Notes from testing:
+- On a phone the snippet must reach the phone's `.obsidian/snippets/` folder. Sync tools often skip hidden folders or new folders in `.obsidian`, so check the file is there (size and date), then fully close and reopen Obsidian, which reads snippets only at startup.
+- The ingredient column is sticky and the amount scrolls away, so a table that is wider than the screen scrolls inside its own container. Header cells are forced opaque because some themes make them transparent.
+- Hover tooltips on sideways steps do not exist on a phone.
+- Untested in Obsidian: the SVG flow diagram and the in-page chip links (`#o1`). If a diagram is stripped, drop it and keep the "Needs / Makes" lines.
+- Do not widen notes with `cssclasses` and `--file-line-width`; the table scroller already handles wide tables.
 
 ## Markup cheat sheet
 

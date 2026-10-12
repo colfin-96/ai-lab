@@ -64,10 +64,13 @@ h2 { margin: 0 0 8px; font-size: 1.15rem; font-weight: 700; }
 .wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
 table { border-collapse: collapse; min-width: 44rem; width: 100%; }
 th, td { border: 1px solid var(--line); padding: 8px 10px; vertical-align: top; text-align: left; }
-thead th { background: var(--panel); font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 500; }
-td.a { font-family: var(--mono); font-size: 13px; white-space: nowrap; border-left: 4px solid var(--g); }
+thead th { background: var(--panel) !important; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 500; }
+td.a { font-family: var(--mono); font-size: 13px; border-left: 4px solid var(--g); }
 td.i { font-weight: 500; }
 td.p { color: var(--muted); font-size: 14px; }
+/* The ingredient column stays put while the steps scroll sideways (the amount scrolls away). Borders do not travel with sticky cells in a collapsed table, so its edges are inset shadows. Header cell backgrounds are forced opaque, since some themes make table headers transparent. */
+thead th:nth-child(2), td.i { position: sticky; left: 0; z-index: 1; box-shadow: inset -1px 0 0 var(--line), inset 0 -1px 0 var(--line); }
+thead th:nth-child(2) { z-index: 2; }
 td.a, td.i, td.p { background: color-mix(in srgb, var(--g) 9%, var(--panel)); }
 td.s { background: color-mix(in srgb, var(--g) 20%, var(--panel)); font-size: 14px; }
 td.s b { display: block; font-weight: 700; }
